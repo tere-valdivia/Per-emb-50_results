@@ -1,11 +1,11 @@
 # Own folders
-H2CO/Cconfig/
-C18O/Cconfig/
-SO2_11_1_11_10_0_10/Cconfig/
-SO2_12_39_12_210/Cconfig/
-SO2_4_22_3_13/Cconfig/
-SO_55_44/Cconfig/
-SO_56_45/Cconfig/
+H2CO/
+C18O/
+SO2_11_1_11_10_0_10/
+SO2_12_39_12_210/
+SO2_4_22_3_13/
+SO_55_44/
+SO_56_45/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

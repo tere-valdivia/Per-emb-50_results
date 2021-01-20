@@ -7,7 +7,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import regions
 import os
-# Define the velocities where there is emission
+# Define the velocities where there is emission to calculate the rms
 
 cubefile = H2CO_303_202_s
 # Where we estimate the line is
@@ -30,23 +30,29 @@ naxis = header['naxis1']
 wcsspec = WCS(header).spectral
 chanlims = wcsspec.all_world2pix([velinit, velend], 0)[0]
 rmsmap = np.sqrt(np.mean(((np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))**2), axis=0))
-plt.imshow(rmsmap)
 
-if os.path.exists(cubefile+'_fitcube_moments.fits'):
-    spc.momentcube = fits.getdata(cubefile+'_fitcube_moments.fits')
+momentsfile = cubefile+'_fitcube_moments.fits'
+if os.path.exists(momentsfile):
+    spc.momentcube = fits.getdata(momentsfile)
 else:
     spc.momenteach(vheight=False)
     momentsfile = fits.PrimaryHDU(data=spc.momentcube, header=header)
-    momentsfile.writeto(cubefile+'_fitcube_moments.fits')
+    momentsfile.writeto(momentsfile)
+fitfile = cubefile + '_1G_fitparams.fits'
+if os.path.exists(fitfile):
+    spc.load_model_fit(fitfile, 3, fittype='gaussian')
+else:
+    spc.fiteach(fittype = 'gaussian',
+                guesses = spc.momentcube,
+                errmap = rmsmap,
+                signal_cut = 4,
+                blank_value=np.nan,
+                start_from_point=starting_point) # ignore pixels with SNR<4)
+    spc.write_fit(fitfile)
 
-spc.fiteach(fittype = 'gaussian',
-            guesses = spc.momentcube,
-            errmap = rmsmap,
-            signal_cut = 4,
-            start_from_point=starting_point) # ignore pixels with SNR<4)
-# spc.write_fit(cubefile + '_1G_fitparams.fits')
 spc.mapplot()
-plt.imshow(spc.errcube[0])
+
 # show the fitted amplitude
 spc.show_fit_param(0, cmap='viridis')
+
 plt.show()

@@ -41,7 +41,7 @@ def setup_plot_noema(fig_i, label_col='black', star_col='red'):
     """
     fig_i.set_system_latex(True)
     fig_i.ticks.set_color(label_col)
-    fig_i.recenter(52.28236666667, 31.36586888889, radius=18 * (u.arcsec).to(u.deg))
+    # fig_i.recenter(52.28236666667, 31.36586888889, radius=18 * (u.arcsec).to(u.deg))
     # fig_i.set_nan_color('0.9')
     fig_i.add_beam(color=label_col)
     distance = 293.

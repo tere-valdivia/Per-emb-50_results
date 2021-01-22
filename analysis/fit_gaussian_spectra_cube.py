@@ -84,7 +84,6 @@ def filter(spc, rms, rmslevel, velinit, velend, negative=True, errorfrac=0.5, ep
     spc.errcube[np.where(np.repeat([nanmask], 3, axis=0))] = np.nan
     return spc
 
-
 fitfile = cubefile + '_1G_fitparams.fits'
 if os.path.exists(fitfile):
     spc.load_model_fit(fitfile, 3, fittype='gaussian')

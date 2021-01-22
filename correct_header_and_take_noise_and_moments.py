@@ -8,6 +8,13 @@ import astropy.units as u
 import matplotlib.font_manager as fm
 from spectral_cube import SpectralCube
 
+"""
+The imaged data from mapping do not have the units in the header.
+This code corrects the header and does a quick calculation of the rms and the
+moments 0, 1 and 2 of the image
+
+"""
+
 folder = '13CO/CDconfig/'
 cubename = folder + 'Per-emb-50_CD_l027l066_uvsub_13CO'
 emptyheader = True

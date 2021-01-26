@@ -35,6 +35,7 @@ ra = header['ra']
 dec = header['dec']
 naxis = header['naxis1']
 wcsspec = WCS(header).spectral
+wcscel = WCS(header).celestial
 chanlims = [wcsspec.world_to_pixel(velinit).tolist(), wcsspec.world_to_pixel(velend).tolist()]
 rms = np.std(np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))
 rmsmap = np.ones(np.shape(spc.cube)) * rms
@@ -88,6 +89,7 @@ fitfile = cubefile + '_1G_fitparams.fits'
 if os.path.exists(fitfile):
     spc.load_model_fit(fitfile, 3, fittype='gaussian')
     spc = filter(spc, rms, 4, velinit, velend)
+    fittedmodel = spc.get_modelcube()
     spc.write_fit(fitfile, overwrite=True)
 else:
     spc.fiteach(fittype='gaussian',
@@ -100,11 +102,27 @@ else:
                 start_from_point=(starting_point))
     spc = filter(spc, rms, 4, velinit, velend)
     spc.write_fit(fitfile)
-fittedmodel = spc.get_modelcube()
+    fittedmodel = spc.get_modelcube()
+
+# # TODO: Separate the cube into 2D fits each with one parameter
+tmax, vlsr, sigmav = spc.parcube
+key_list = ['NAXIS3', 'CRPIX3', 'CDELT3', 'CUNIT3', 'CTYPE3', 'CRVAL3']
+commonhead = header.copy()
+for key_i in key_list:
+    commonhead.remove(key_i)
+
+hdutmax = fits.PrimaryHDU(data=tmax, header=commonhead)
+hdutmax.writeto(cubefile + '_1G_tmax.fits')
+headervelocities = commonhead.copy()
+headervelocities['BUNIT'] = 'km/s'
+hduvlsr = fits.PrimaryHDU(data=vlsr, header=headervelocities)
+hduvlsr.writeto(cubefile + '_1G_Vc.fits')
+hdusigmav = fits.PrimaryHDU(data=sigmav, header=headervelocities)
+hdusigmav.writeto(cubefile + '_1G_sigma_v.fits')
+
 modelhdu = fits.PrimaryHDU(data=fittedmodel, header=header)
 modelhdu.writeto(cubefile + '_fitcube_fitted.fits', overwrite=True)
 spc.mapplot()
 spc.show_fit_param(2, cmap='inferno')
 
-np.shape(np.concatenate([spc.parcube, spc.errcube]))
 plt.show()

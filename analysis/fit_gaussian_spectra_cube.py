@@ -107,18 +107,21 @@ else:
 # # TODO: Separate the cube into 2D fits each with one parameter
 tmax, vlsr, sigmav = spc.parcube
 key_list = ['NAXIS3', 'CRPIX3', 'CDELT3', 'CUNIT3', 'CTYPE3', 'CRVAL3']
-commonhead = header.copy()
+
+commonhead = fits.getheader(fitfile)
 for key_i in key_list:
     commonhead.remove(key_i)
+commonhead['NAXIS'] = 2
+commonhead['WCSAXES'] = 2
 
 hdutmax = fits.PrimaryHDU(data=tmax, header=commonhead)
-hdutmax.writeto(cubefile + '_1G_tmax.fits')
+hdutmax.writeto(cubefile + '_1G_tmax.fits', overwrite=True)
 headervelocities = commonhead.copy()
 headervelocities['BUNIT'] = 'km/s'
 hduvlsr = fits.PrimaryHDU(data=vlsr, header=headervelocities)
-hduvlsr.writeto(cubefile + '_1G_Vc.fits')
+hduvlsr.writeto(cubefile + '_1G_Vc.fits', overwrite=True)
 hdusigmav = fits.PrimaryHDU(data=sigmav, header=headervelocities)
-hdusigmav.writeto(cubefile + '_1G_sigma_v.fits')
+hdusigmav.writeto(cubefile + '_1G_sigma_v.fits', overwrite=True)
 
 modelhdu = fits.PrimaryHDU(data=fittedmodel, header=header)
 modelhdu.writeto(cubefile + '_fitcube_fitted.fits', overwrite=True)

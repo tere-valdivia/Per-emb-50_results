@@ -9,12 +9,12 @@ import os
 This code computes the moments 0, 1 and 8 and the linewidth map for the cube which
 is used to fit gaussian profiles later.
 '''
-
+mask = False
 velinit = 5.5 * u.km/u.s
-velend = 8.0 * u.km/u.s  # streamline feature
-# velend = 9.0 * u.km/u.s # total emission
-rangename = 'stream'
-# rangename = 'total'
+# velend = 8.0 * u.km/u.s  # streamline feature
+velend = 9.0 * u.km/u.s # total emission
+# rangename = 'stream'
+rangename = 'total'
 
 filename = H2CO_303_202_s + '_fitcube'
 
@@ -27,7 +27,8 @@ if os.path.exists(filename+'.fits'):
     rms = np.sqrt(np.mean((np.vstack(
         [cube.unmasked_data[:np.min(chanlims), :, :], cube.unmasked_data[np.max(chanlims):, :, :]]))**2))
     subcube = cube.spectral_slab(velinit, velend)
-    subcube = subcube.with_mask((subcube > 4 * rms))
+    if mask:
+        subcube = subcube.with_mask((subcube > 4 * rms))
 
     for i in [0, 1, 2, 8]:
         if i == 2:

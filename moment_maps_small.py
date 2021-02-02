@@ -7,7 +7,7 @@ import os
 
 '''
 This code computes the moments 0, 1 and 8 and the linewidth map for the cube which
-is used to fit gaussian profiles later.
+is used to fit gaussian profiles later and of the complete cubes
 '''
 mask = False
 velinit = 5.5 * u.km/u.s
@@ -16,10 +16,11 @@ velend = 9.0 * u.km/u.s # total emission
 # rangename = 'stream'
 rangename = 'total'
 
-filename = H2CO_303_202_s + '_fitcube'
+# filename = H2CO_303_202_s + '_fitcube'
+filename = H2CO_303_202
 
 if os.path.exists(filename+'.fits'):
-    cube = SpectralCube.read(filename+'.fits')
+    cube = SpectralCube.read(filename+'.fits').with_spectral_unit(u.km/u.s)
     header = cube.header
     wcsspec = WCS(header).spectral
     chanlims = [int(wcsspec.world_to_pixel(velinit).tolist()),

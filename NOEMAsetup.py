@@ -30,7 +30,7 @@ H2CO_303_202_TdV_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube
 
 H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_Vc'
 region_streamer = 'data/region_streamer.reg'
-region_streamer2 = 'data/region_streamer2.reg'
+region_streamer_s = 'data/region_streamer_s.reg'
 
 CO21blue = 'data/Per50.12CO21.robust-1_1.0to4.5_blue'
 CO21red = 'data/Per50.12CO21.robust-1_10.5to14.0_red'

@@ -10,8 +10,7 @@ from astropy.wcs import WCS
 from astropy.io import fits
 from NOEMAsetup import *
 from astropy.coordinates import SkyCoord, FK5
-import regions
-
+import pyregion
 
 
 # This import registers the 3D projection, but is otherwise unused.
@@ -23,18 +22,18 @@ Aim for a r_c about 100 AU
 '''
 # Main parameters to generate a streamline
 # inclination is not well constrained
-Mstar = 0.58*u.Msun
-inc = -67*u.deg
+# Mstar = 0.58*u.Msun
+Mstar = (2.9+2.2)*u.Msun # mass of the star and envelope
+# inc = -(67-180)*u.deg
+inc = -(67)*u.deg
 # inc = 0*u.deg
-PA_ang = 170*u.deg
-# PA_ang = 0*u.deg
+PA_ang = -(170-90)*u.deg
+# PA_ang = -90*u.deg
 # Fixed parameter
-v_lsr = 7.3*u.km/u.s
-
+v_lsr = 7.46*u.km/u.s
+15 * (3 + (29 + 7.76/60.) / 60.)
 Per50_c = SkyCoord(ra_Per50, dec_Per50, frame='fk5')
 Per50_ref = Per50_c.skyoffset_frame()
-freq_H2CO_303_202 = fits.getheader('../'+H2CO_303_202_TdV_s+'.fits')['RESTFREQ'] * u.Hz
-
 
 # figure 1: 3d plot to see the 3d structure of the streamline
 fig = plt.figure()
@@ -46,16 +45,26 @@ ax.set_zlabel('Z')
 # Figure 2: plot to observe the streamer in the image plane
 
 hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
-wcs = WCS(hdu[0].header)
+header = hdu[0].header
+freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
+wcs = WCS(header)
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111, projection=wcs)
 ax2.imshow(hdu[0].data, vmin=0, vmax=4, origin='lower', cmap='Greys')
 ax2.set_autoscale_on(False)
 ax2.plot(ra_Per50, dec_Per50, transform=ax2.get_transform('fk5'), marker='*',
          color='red')
+# ax2.set_title(r'$M = {}$'.format(Mstar))
 hdu.close()
 ax2.set_xlabel('Right Ascension (J2000)')
 ax2.set_ylabel('Declination (J2000)')
+regstreamer = pyregion.open('../'+region_streamer_s)
+r2 = regstreamer.as_imagecoord(header)
+patch_list, artist_list = r2.get_mpl_patches_texts()
+# for p in patch_list:
+#     ax2.add_patch(p)
+# for a in artist_list:
+#     ax2.add_artist(a)
 
 # Figure 3: plot to observe the streamer in velocity
 fig3 = plt.figure()
@@ -79,6 +88,8 @@ ax2.plot(my_axis.ra, my_axis.dec, transform=ax2.get_transform('fk5'),
 # new axes
 my_axis_new = SkyCoord(-nx_b*u.arcsec, nz_b*u.arcsec,
                              frame=Per50_ref).transform_to(FK5)
+my_axis_new2 = SkyCoord(nx_b*u.arcsec, ny_b*u.arcsec,
+                             frame=Per50_ref).transform_to(FK5)
 if ny_b[-1] > 0:
     new_ax_color = 'red'
 else:
@@ -86,7 +97,6 @@ else:
 
 ax2.plot(my_axis_new.ra, my_axis_new.dec, transform=ax2.get_transform('fk5'),
          color=new_ax_color)
-
 
 # We obtain the kernel probability distribution for r and v
 
@@ -112,24 +122,25 @@ zz = np.reshape(kernel(positions).T, xx.shape)
 zz /= zz.max()  # normalization of probability
 # We plot in the corresponding axis
 ax3.contourf(xx, yy, zz, cmap='Greys', levels=np.arange(0.1, 1.2, 0.1), vmin=0., vmax=1.1)
+ax3.axhline(v_lsr.value, color='k')
 
 # We calculate the streamlines for several parameters
 
 
 # Constant parameters for testing
-theta0 = 40*u.deg  # rotate clockwise
-r0 = 1600*u.au
-phi0 = 130*u.deg  # rotate the plane
+theta0 = 91*u.deg  # rotate clockwise
+r0 = 1500*u.au
+phi0 = 25*u.deg  # rotate the plane
 v_r0 = 0*u.km/u.s
-omega0 = 3e-13/u.s
+omega0 = 6e-13/u.s
 
 # Arrays
-thetalist = np.array([90, 120, 150, 180]) * u.deg
-rlist = np.array([2000,3000,4000,5000])* u.au
-philist = np.array([180, 200, 220])* u.deg
+thetalist = np.array([90, 100, 110, 120]) * u.deg
+rlist = np.array([1250, 1500, 1750, 2000])* u.au
+philist = np.array([20, 25, 30, 35])* u.deg
 # rlist =np.array([1600, 1800, 2000]) * u.au
-v_rlist = np.array([0, 1, 2, 3]) * u.km/u.s
-omegalist = np.array([2., 3., 4.,5.,6.])* 1.e-13 / u.s
+v_rlist = np.array([0, 0.2,0.4,0.6]) * u.km/u.s
+omegalist = np.array([5,6,7,8])* 1.e-13 / u.s
 
 # Make a label for each streamline set of parameters
 def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
@@ -147,10 +158,10 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
     return my_label
 
 # for phi0 in philist:
-# for r0 in rlist:
+for r0 in rlist:
 # for v_r0 in v_rlist:
 # for omega0 in omegalist:
-for theta0 in thetalist:
+# for theta0 in thetalist:
     #we obtain the streamline positions and velocities
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
@@ -165,6 +176,7 @@ for theta0 in thetalist:
                    frame=Per50_ref).transform_to(FK5)
     # First we plot the 3d
     ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
+    ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
     #Then we plot the streamer in the image plane
     ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
              ls='-', lw=1, label=my_label)

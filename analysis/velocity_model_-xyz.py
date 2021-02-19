@@ -17,21 +17,22 @@ import pyregion
 
 '''
 This code is to test different combinations of parameters to get the best
-ones for the streamer (?) in Per-emb-50
+ones for the streamer in Per-emb-50
 Aim for a r_c about 100 AU
+
+in this code, i=0 is an edge on disk
 '''
 # Main parameters to generate a streamline
-# inclination is not well constrained
 # Mstar = 0.58*u.Msun
-Mstar = (2.9+2.2)*u.Msun # mass of the star and envelope
+Mstar = (2.9+2.2+0.58)*u.Msun # mass of the star and envelope and disk
 # inc = -(67-180)*u.deg
-inc = -(67)*u.deg
-# inc = 0*u.deg
+inc = (360-(90-67))*u.deg # should be almost edge on
 PA_ang = -(170-90)*u.deg
-# PA_ang = -90*u.deg
+regionsample = 'data/region_streamer_test.reg'
+
 # Fixed parameter
-v_lsr = 7.46*u.km/u.s
-15 * (3 + (29 + 7.76/60.) / 60.)
+v_lsr = 7.48*u.km/u.s #+- 0.14 km/s according to out C18O data
+
 Per50_c = SkyCoord(ra_Per50, dec_Per50, frame='fk5')
 Per50_ref = Per50_c.skyoffset_frame()
 
@@ -42,8 +43,7 @@ ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
-# Figure 2: plot to observe the streamer in the image plane
-
+# Figure 2: plot to observe the streamer in the image plan
 hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
 header = hdu[0].header
 freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
@@ -58,13 +58,21 @@ ax2.plot(ra_Per50, dec_Per50, transform=ax2.get_transform('fk5'), marker='*',
 hdu.close()
 ax2.set_xlabel('Right Ascension (J2000)')
 ax2.set_ylabel('Declination (J2000)')
-regstreamer = pyregion.open('../'+region_streamer_s)
+regstreamer = pyregion.open('../'+regionsample)
 r2 = regstreamer.as_imagecoord(header)
 patch_list, artist_list = r2.get_mpl_patches_texts()
-# for p in patch_list:
-#     ax2.add_patch(p)
-# for a in artist_list:
-#     ax2.add_artist(a)
+for p in patch_list:
+    ax2.add_patch(p)
+for a in artist_list:
+    ax2.add_artist(a)
+# In case we want to zoom in
+ra = 52.2813698
+dec = 31.3648759
+radiusplot = 10. / 3600.
+zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
+                             [dec-radiusplot, dec+radiusplot], 0)
+ax2.set_xlim(zoomlims[0][1], zoomlims[0][0])
+ax2.set_ylim(zoomlims[1][0], zoomlims[1][1])
 
 # Figure 3: plot to observe the streamer in velocity
 fig3 = plt.figure()
@@ -88,26 +96,30 @@ ax2.plot(my_axis.ra, my_axis.dec, transform=ax2.get_transform('fk5'),
 # new axes
 my_axis_new = SkyCoord(-nx_b*u.arcsec, nz_b*u.arcsec,
                              frame=Per50_ref).transform_to(FK5)
-my_axis_new2 = SkyCoord(nx_b*u.arcsec, ny_b*u.arcsec,
-                             frame=Per50_ref).transform_to(FK5)
+
 if ny_b[-1] > 0:
     new_ax_color = 'red'
 else:
     new_ax_color = 'blue'
 
-ax2.plot(my_axis_new.ra, my_axis_new.dec, transform=ax2.get_transform('fk5'),
-         color=new_ax_color)
+# ax2.plot(my_axis_new.ra, my_axis_new.dec, transform=ax2.get_transform('fk5'),
+#          color=new_ax_color)
+
+ax2.plot(my_axis_new.ra[1:], my_axis_new.dec[1:], transform=ax2.get_transform('fk5'),
+                     color=new_ax_color)
+ax2.plot(my_axis_new.ra[0:2], my_axis_new.dec[0:2], transform=ax2.get_transform('fk5'),
+         color='red')
 
 # We obtain the kernel probability distribution for r and v
 
 # Obtain the offset radius from Per-emb-50 and the v_lsr for each
 # pixel in the streamer region
 r_proj, v_los = per_emb_50_get_vc_r('../'+H2CO_303_202_fit_Vc+'.fits',
-                                    '../'+region_streamer_s)
+                                    '../'+regionsample)
 # create the grid for the kernel distribution
 #x is projected distance
 xmin = 0
-xmax = 2000
+xmax = 4000
 # y is velocity lsr
 ymin = 6.
 ymax = 8.
@@ -128,19 +140,21 @@ ax3.axhline(v_lsr.value, color='k')
 
 
 # Constant parameters for testing
-theta0 = 91*u.deg  # rotate clockwise
-r0 = 1500*u.au
-phi0 = 25*u.deg  # rotate the plane
-v_r0 = 0*u.km/u.s
-omega0 = 6e-13/u.s
+theta0 = 89.9*u.deg  # rotate clockwise
+r0 = 3800.*u.au
+phi0 = 20.*u.deg  # rotate the plane
+v_r0 = 1.*u.km/u.s
+omega0 = 5e-13/u.s
 
 # Arrays
-thetalist = np.array([90, 100, 110, 120]) * u.deg
-rlist = np.array([1250, 1500, 1750, 2000])* u.au
-philist = np.array([20, 25, 30, 35])* u.deg
+# 89.9, 95, 100, 105
+# 70, 75, 80, 85
+thetalist = np.array([70, 75, 80, 85]) * u.deg
+rlist = np.array([1500, 1600, 1700, 1800, 1900])* u.au
+philist = np.array([0, 10, 20, 30, 40])* u.deg
 # rlist =np.array([1600, 1800, 2000]) * u.au
-v_rlist = np.array([0, 0.2,0.4,0.6]) * u.km/u.s
-omegalist = np.array([5,6,7,8])* 1.e-13 / u.s
+v_rlist = np.array([4, 5, 6]) * u.km/u.s
+omegalist = np.array([1,4,7,9])* 1.e-13 / u.s
 
 # Make a label for each streamline set of parameters
 def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
@@ -157,16 +171,38 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
         my_label = r"{0} $r_0=${1}".format(my_label, r)
     return my_label
 
-# for phi0 in philist:
-for r0 in rlist:
+#
+# (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+#     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+#     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=200*u.au)
+# my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
+# # we obtain the distance of each point in the sky
+# d_sky_au = np.sqrt(x1**2 + z1**2)
+# # Stream line into arcsec
+# dra_stream = -x1.value / dist_Per50
+# ddec_stream = z1.value / dist_Per50
+# fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+#                frame=Per50_ref).transform_to(FK5)
+# # First we plot the 3d
+# ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
+# ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+# #Then we plot the streamer in the image plane
+# ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+#          ls='-', lw=1, label=my_label)
+# # Finally we plot the streamer in velocity
+# ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
+
+
+for phi0 in philist:
+# for r0 in rlist:
 # for v_r0 in v_rlist:
 # for omega0 in omegalist:
 # for theta0 in thetalist:
     #we obtain the streamline positions and velocities
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=200*u.au)
-    my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0) #, v_r=v_r0)
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+    my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
     # we obtain the distance of each point in the sky
     d_sky_au = np.sqrt(x1**2 + z1**2)
     # Stream line into arcsec
@@ -185,6 +221,6 @@ for r0 in rlist:
 
 # Plot legend at the end
 # ax.legend()
-ax2.legend()
+ax2.legend(prop={'size': 8})
 # ax3.legend()
 plt.show()

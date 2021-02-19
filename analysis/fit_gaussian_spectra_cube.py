@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 from NOEMAsetup import *
 from spectral_cube import SpectralCube
 import pyspeckit
@@ -14,10 +16,10 @@ cubefile = H2CO_303_202_s
 # Where we estimate the line is
 velinit = 5.5 * u.km/u.s
 velend = 9.5 * u.km/u.s
-fitregionfile = 'analysis/H2CO_fitregion.reg'
+fitregionfile = '../analysis/H2CO_fitregion.reg'
 starting_point = (70, 82)
 
-if not os.path.exists(cubefile+'_fitcube.fits'):
+if not os.path.exists('../'+cubefile+'_fitcube.fits'):
     # The cube to fit must be smaller than the small cube we set earlier
     # and must be in K and km/s
     cube1 = SpectralCube.read(cubefile+'.fits').with_spectral_unit(u.km/u.s)
@@ -29,7 +31,7 @@ if not os.path.exists(cubefile+'_fitcube.fits'):
     subcube = cube1.subcube_from_regions(regionlist)
     subcube.hdu.writeto(cubefile+'_fitcube.fits')
 
-spc = pyspeckit.Cube(cubefile+'_fitcube.fits')
+spc = pyspeckit.Cube('../'+cubefile+'_fitcube.fits')
 header = spc.header
 ra = header['ra']
 dec = header['dec']

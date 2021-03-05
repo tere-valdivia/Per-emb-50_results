@@ -11,7 +11,8 @@ from astropy.io import fits
 from NOEMAsetup import *
 from astropy.coordinates import SkyCoord, FK5
 import pyregion
-
+import pickle
+# Maybe they are two streamers?
 
 # This import registers the 3D projection, but is otherwise unused.
 
@@ -27,8 +28,11 @@ in this code, i=0 is an edge on disk
 Mstar = (2.9+2.2+0.58)*u.Msun # mass of the star and envelope and disk
 # inc = -(67-180)*u.deg
 inc = (360-(90-67))*u.deg # should be almost edge on
+# inc = (360-(90-77))*u.deg # should be almost edge on
 PA_ang = -(170-90)*u.deg
-regionsample = 'data/region_streamer_test.reg'
+regionsample = 'data/region_streamer_l.reg'
+savekernel = False
+savemodel = False
 
 # Fixed parameter
 v_lsr = 7.48*u.km/u.s #+- 0.14 km/s according to out C18O data
@@ -58,6 +62,18 @@ ax2.plot(ra_Per50, dec_Per50, transform=ax2.get_transform('fk5'), marker='*',
 hdu.close()
 ax2.set_xlabel('Right Ascension (J2000)')
 ax2.set_ylabel('Declination (J2000)')
+
+# For plotting the different regions together
+# regionsamples = ['data/region_streamer_s.reg', 'data/region_streamer_m.reg', 'data/region_streamer_l.reg']
+# for reg in regionsamples:
+#     regstreamer = pyregion.open('../'+reg)
+#     r2 = regstreamer.as_imagecoord(header)
+#     patch_list, artist_list = r2.get_mpl_patches_texts()
+#     for p in patch_list:
+#         ax2.add_patch(p)
+#     for a in artist_list:
+#         ax2.add_artist(a)
+
 regstreamer = pyregion.open('../'+regionsample)
 r2 = regstreamer.as_imagecoord(header)
 patch_list, artist_list = r2.get_mpl_patches_texts()
@@ -65,6 +81,7 @@ for p in patch_list:
     ax2.add_patch(p)
 for a in artist_list:
     ax2.add_artist(a)
+
 # In case we want to zoom in
 ra = 52.2813698
 dec = 31.3648759
@@ -102,8 +119,6 @@ if ny_b[-1] > 0:
 else:
     new_ax_color = 'blue'
 
-# ax2.plot(my_axis_new.ra, my_axis_new.dec, transform=ax2.get_transform('fk5'),
-#          color=new_ax_color)
 
 ax2.plot(my_axis_new.ra[1:], my_axis_new.dec[1:], transform=ax2.get_transform('fk5'),
                      color=new_ax_color)
@@ -119,10 +134,11 @@ r_proj, v_los = per_emb_50_get_vc_r('../'+H2CO_303_202_fit_Vc+'.fits',
 # create the grid for the kernel distribution
 #x is projected distance
 xmin = 0
-xmax = 4000
+xmax = 3500
 # y is velocity lsr
 ymin = 6.
 ymax = 8.
+
 xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
 positions = np.vstack([xx.ravel(), yy.ravel()])
 # we select only those who are not nan
@@ -138,23 +154,32 @@ ax3.axhline(v_lsr.value, color='k')
 
 # We calculate the streamlines for several parameters
 
+def r0ideal(omega, mass, rcideal):
+    r0i = (SL.G * Mstar * rcideal/(omega**2))**(1/4.)
+    return r0i
+
 
 # Constant parameters for testing
-theta0 = 89.9*u.deg  # rotate clockwise
-r0 = 3800.*u.au
-phi0 = 20.*u.deg  # rotate the plane
-v_r0 = 1.*u.km/u.s
-omega0 = 5e-13/u.s
+theta0 = 80. * u.deg  # rotate clockwise
+r_c0 = 300 * u.au
+phi0 = 5. * u.deg  # rotate the plane
+v_r0 = 0. * u.km/u.s
+omega0 = 8e-13 / u.s
+r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
+# print('The ideal r0 for '+str(omega0)+' is '+str(r0))
+
+
 
 # Arrays
 # 89.9, 95, 100, 105
 # 70, 75, 80, 85
-thetalist = np.array([70, 75, 80, 85]) * u.deg
+thetalist = np.array([68,71,73,75]) * u.deg
 rlist = np.array([1500, 1600, 1700, 1800, 1900])* u.au
-philist = np.array([0, 10, 20, 30, 40])* u.deg
+philist = np.array([0,5,10,15])* u.deg
 # rlist =np.array([1600, 1800, 2000]) * u.au
-v_rlist = np.array([4, 5, 6]) * u.km/u.s
-omegalist = np.array([1,4,7,9])* 1.e-13 / u.s
+v_rlist = np.array([0,1,2]) * u.km/u.s
+omegalist = np.array([8, 10])* 1.e-13 / u.s
+# colorlist = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 # Make a label for each streamline set of parameters
 def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
@@ -168,13 +193,13 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
     if phi is not None:
         my_label = r"{0} $\phi_0=${1}".format(my_label, phi)
     if r is not None:
-        my_label = r"{0} $r_0=${1}".format(my_label, r)
+        my_label = r"{0} $r_0=${1}".format(my_label, np.round(r,1))
     return my_label
 
-#
+# Single parameters
 # (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
 #     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-#     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=200*u.au)
+#     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
 # my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
 # # we obtain the distance of each point in the sky
 # d_sky_au = np.sqrt(x1**2 + z1**2)
@@ -192,16 +217,18 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
 # # Finally we plot the streamer in velocity
 # ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
 
-
-for phi0 in philist:
+# # One array of parameters
+# for phi0 in philist:
 # for r0 in rlist:
-# for v_r0 in v_rlist:
+for v_r0 in v_rlist:
 # for omega0 in omegalist:
 # for theta0 in thetalist:
     #we obtain the streamline positions and velocities
+    # Only if omega0 varies
+    # r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=r_c0)
     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
     # we obtain the distance of each point in the sky
     d_sky_au = np.sqrt(x1**2 + z1**2)
@@ -211,6 +238,7 @@ for phi0 in philist:
     fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
                    frame=Per50_ref).transform_to(FK5)
     # First we plot the 3d
+    print(vy1[0])
     ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
     ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
     #Then we plot the streamer in the image plane
@@ -219,8 +247,104 @@ for phi0 in philist:
     # Finally we plot the streamer in velocity
     ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
 
+
+    (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+        mass=Mstar, r0=r0, theta0=theta0-5*u.deg, phi0=phi0,
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+    my_label = stream_label(omega=omega0, theta=theta0-5*u.deg, phi=phi0, r=r0, v_r=v_r0)
+    # we obtain the distance of each point in the sky
+    d_sky_au = np.sqrt(x1**2 + z1**2)
+    # Stream line into arcsec
+    dra_stream = -x1.value / dist_Per50
+    ddec_stream = z1.value / dist_Per50
+    fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+                   frame=Per50_ref).transform_to(FK5)
+    # First we plot the 3d
+    print(vy1[0])
+    ax.plot(x1, y1, z1, linestyle='dashed', linewidth=1, label=my_label)
+    ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+    #Then we plot the streamer in the image plane
+    ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+             ls='--', lw=1, label=my_label)
+    # Finally we plot the streamer in velocity
+    ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, linestyle='dashed')
+
+#
+# # Arrays of selected parameters
+# thetalist = np.array([80, 80, 80, 82, 85, 85, 85, 90.1, 91, 95]) * u.deg
+# rlist = np.array([3000, 3100, 3200, 3300, 3400, 3500, 3600, 3700, 3800, 3900])* u.au
+# philist = np.array([20, 20, 20, 20, 30, 30, 30, 40, 40, 40]) * u.deg
+# colorlist = np.array(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
+#
+# thetalist = thetalist[7:]
+# rlist = rlist[7:]
+# philist = philist[7:]
+# colorlist = colorlist[7:]
+#
+#
+# for theta0, r0, phi0, color0 in zip(thetalist, rlist, philist, colorlist):
+#     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+#         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+#         omega=omega0, v_r0=0. * u.km/u.s, inc=inc, pa=PA_ang, rmin=300*u.au)
+#     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0)
+#     # we obtain the distance of each point in the sky
+#     d_sky_au = np.sqrt(x1**2 + z1**2)
+#     # Stream line into arcsec
+#     dra_stream = -x1.value / dist_Per50
+#     ddec_stream = z1.value / dist_Per50
+#     fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+#                    frame=Per50_ref).transform_to(FK5)
+#     # First we plot the 3d
+#     ax.plot(x1, y1, z1, linestyle='dashed', linewidth=1, label=my_label, color=color0)
+#     ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+#     #Then we plot the streamer in the image plane
+#     ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+#              ls='--', lw=1, label=my_label, color=color0)
+#     # Finally we plot the streamer in velocity
+#     ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, color=color0, linestyle='dashed')
+#     # Now we plot with a starting velocity
+#     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+#         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+#         omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+#     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
+#     # we obtain the distance of each point in the sky
+#     d_sky_au = np.sqrt(x1**2 + z1**2)
+#     # Stream line into arcsec
+#     dra_stream = -x1.value / dist_Per50
+#     ddec_stream = z1.value / dist_Per50
+#     fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+#                    frame=Per50_ref).transform_to(FK5)
+#     # First we plot the 3d
+#     ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label, color=color0)
+#     ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+#     #Then we plot the streamer in the image plane
+#     ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+#              ls='-', lw=1, label=my_label, color=color0)
+#     # Finally we plot the streamer in velocity
+#     ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, color=color0)
+
 # Plot legend at the end
 # ax.legend()
 ax2.legend(prop={'size': 8})
 # ax3.legend()
 plt.show()
+
+if savekernel:
+    vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_s.pickle'
+    KDE_vel_rad = {'radius': xx, 'v_lsr': yy, 'dens': zz}
+    with open(vlsr_rad_kde_pickle, 'wb') as f:
+        pickle.dump(KDE_vel_rad, f)
+
+if savemodel:
+    stream_params = 'streamer_model_params_vrvkms.pickle'
+    stream_model_params = {'theta0': theta0, 'r0': r0, 'phi0': phi0,
+                           'v_r0': v_r0, 'omega0': omega0, 'v_lsr': v_lsr}
+    with open(stream_params, 'wb') as f:
+        pickle.dump(stream_model_params, f)
+
+
+    stream_pickle = 'streamer_model_vr4kms.pickle'
+    stream_model = {'ra': fil.ra.value*u.deg, 'dec': fil.dec.value*u.deg,
+                    'd_sky_au': d_sky_au, 'vlsr': v_lsr + vy1}
+    with open(stream_pickle, 'wb') as f:
+        pickle.dump(stream_model, f)

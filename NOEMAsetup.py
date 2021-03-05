@@ -45,7 +45,15 @@ def pb_noema(freq_obs):
     :return: The primary beam FWHM in arcsec
     """
     return (64.1 * u.arcsec * 72.78382 * u.GHz / freq_obs).decompose()
-
+    
+def pb_sma(freq_obs):
+    """
+    Primary beam diameter for SMA at the observed frequency.
+        PB = 48.0 * (231.0*u.GHz) / freq_obs
+    :param freq_obs: is the observed frequency in GHz.
+    :return: The primary beam FWHM in arcsec
+    """
+    return (48.0 * u.arcsec * 231 * u.GHz / freq_obs).decompose()
 
 def setup_plot_noema(fig_i, label_col='black', star_col='red'):
     """

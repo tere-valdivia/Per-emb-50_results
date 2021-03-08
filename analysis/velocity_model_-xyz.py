@@ -47,7 +47,7 @@ ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
-# Figure 2: plot to observe the streamer in the image plan
+# Figure 2: plot to observe the streamer in the image plane
 hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
 header = hdu[0].header
 freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
@@ -160,25 +160,24 @@ def r0ideal(omega, mass, rcideal):
 
 
 # Constant parameters for testing
-theta0 = 80. * u.deg  # rotate clockwise
+theta0 = 120. * u.deg  # rotate clockwise
 r_c0 = 300 * u.au
-phi0 = 5. * u.deg  # rotate the plane
+phi0 = 50. * u.deg  # rotate the plane
 v_r0 = 0. * u.km/u.s
-omega0 = 8e-13 / u.s
+omega0 = 1e-13 / u.s
 r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 # print('The ideal r0 for '+str(omega0)+' is '+str(r0))
-
 
 
 # Arrays
 # 89.9, 95, 100, 105
 # 70, 75, 80, 85
-thetalist = np.array([68,71,73,75]) * u.deg
+thetalist = np.array([70,75,80,85]) * u.deg
 rlist = np.array([1500, 1600, 1700, 1800, 1900])* u.au
 philist = np.array([0,5,10,15])* u.deg
 # rlist =np.array([1600, 1800, 2000]) * u.au
 v_rlist = np.array([0,1,2]) * u.km/u.s
-omegalist = np.array([8, 10])* 1.e-13 / u.s
+omegalist = np.array([4, 8, 12])* 1.e-13 / u.s
 # colorlist = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 # Make a label for each streamline set of parameters
@@ -197,96 +196,95 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None):
     return my_label
 
 # Single parameters
-# (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
-#     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-#     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
-# my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
-# # we obtain the distance of each point in the sky
-# d_sky_au = np.sqrt(x1**2 + z1**2)
-# # Stream line into arcsec
-# dra_stream = -x1.value / dist_Per50
-# ddec_stream = z1.value / dist_Per50
-# fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
-#                frame=Per50_ref).transform_to(FK5)
-# # First we plot the 3d
-# ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
-# ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
-# #Then we plot the streamer in the image plane
-# ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
-#          ls='-', lw=1, label=my_label)
-# # Finally we plot the streamer in velocity
-# ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
+(x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+    mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
+# we obtain the distance of each point in the sky
+d_sky_au = np.sqrt(x1**2 + z1**2)
+# Stream line into arcsec
+dra_stream = -x1.value / dist_Per50
+ddec_stream = z1.value / dist_Per50
+fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+               frame=Per50_ref).transform_to(FK5)
+# First we plot the 3d
+ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
+ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+#Then we plot the streamer in the image plane
+ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+         ls='-', lw=1, label=my_label)
+# Finally we plot the streamer in velocity
+ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
 
 # # One array of parameters
 # for phi0 in philist:
 # for r0 in rlist:
-for v_r0 in v_rlist:
+# for v_r0 in v_rlist:
 # for omega0 in omegalist:
 # for theta0 in thetalist:
     #we obtain the streamline positions and velocities
     # Only if omega0 varies
     # r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
-    (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
-        mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=r_c0)
-    my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
-    # we obtain the distance of each point in the sky
-    d_sky_au = np.sqrt(x1**2 + z1**2)
-    # Stream line into arcsec
-    dra_stream = -x1.value / dist_Per50
-    ddec_stream = z1.value / dist_Per50
-    fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
-                   frame=Per50_ref).transform_to(FK5)
-    # First we plot the 3d
-    print(vy1[0])
-    ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
-    ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
-    #Then we plot the streamer in the image plane
-    ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
-             ls='-', lw=1, label=my_label)
-    # Finally we plot the streamer in velocity
-    ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
-
-
-    (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
-        mass=Mstar, r0=r0, theta0=theta0-5*u.deg, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
-    my_label = stream_label(omega=omega0, theta=theta0-5*u.deg, phi=phi0, r=r0, v_r=v_r0)
-    # we obtain the distance of each point in the sky
-    d_sky_au = np.sqrt(x1**2 + z1**2)
-    # Stream line into arcsec
-    dra_stream = -x1.value / dist_Per50
-    ddec_stream = z1.value / dist_Per50
-    fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
-                   frame=Per50_ref).transform_to(FK5)
-    # First we plot the 3d
-    print(vy1[0])
-    ax.plot(x1, y1, z1, linestyle='dashed', linewidth=1, label=my_label)
-    ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
-    #Then we plot the streamer in the image plane
-    ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
-             ls='--', lw=1, label=my_label)
-    # Finally we plot the streamer in velocity
-    ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, linestyle='dashed')
+    # (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+    #     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+    #     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=r_c0)
+    # my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
+    # # we obtain the distance of each point in the sky
+    # d_sky_au = np.sqrt(x1**2 + z1**2)
+    # # Stream line into arcsec
+    # dra_stream = -x1.value / dist_Per50
+    # ddec_stream = z1.value / dist_Per50
+    # fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+    #                frame=Per50_ref).transform_to(FK5)
+    # # First we plot the 3d
+    # print(vy1[0])
+    # ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label)
+    # ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+    # #Then we plot the streamer in the image plane
+    # ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+    #          ls='-', lw=1, label=my_label)
+    # # Finally we plot the streamer in velocity
+    # ax3.plot(d_sky_au, v_lsr + vy1, label=my_label)
+    #
+    #
+    # (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+    #     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0+5*u.deg,
+    #     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+    # my_label = stream_label(omega=omega0, theta=theta0, phi=phi0+5*u.deg, r=r0, v_r=v_r0)
+    # # we obtain the distance of each point in the sky
+    # d_sky_au = np.sqrt(x1**2 + z1**2)
+    # # Stream line into arcsec
+    # dra_stream = -x1.value / dist_Per50
+    # ddec_stream = z1.value / dist_Per50
+    # fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+    #                frame=Per50_ref).transform_to(FK5)
+    # # First we plot the 3d
+    # print(vy1[0])
+    # ax.plot(x1, y1, z1, linestyle='dashed', linewidth=1, label=my_label)
+    # ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+    # #Then we plot the streamer in the image plane
+    # ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+    #          ls='--', lw=1, label=my_label)
+    # # Finally we plot the streamer in velocity
+    # ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, linestyle='dashed')
 
 #
 # # Arrays of selected parameters
-# thetalist = np.array([80, 80, 80, 82, 85, 85, 85, 90.1, 91, 95]) * u.deg
-# rlist = np.array([3000, 3100, 3200, 3300, 3400, 3500, 3600, 3700, 3800, 3900])* u.au
-# philist = np.array([20, 20, 20, 20, 30, 30, 30, 40, 40, 40]) * u.deg
+# thetalist = np.array([73,75,78,81,84]) * u.deg
+# philist = np.array([0,5,10,15,20]) * u.deg
 # colorlist = np.array(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'])
 #
 # thetalist = thetalist[7:]
 # rlist = rlist[7:]
 # philist = philist[7:]
-# colorlist = colorlist[7:]
+# colorlist = colorlist[:4]
 #
 #
-# for theta0, r0, phi0, color0 in zip(thetalist, rlist, philist, colorlist):
+# for theta0, phi0, color0 in zip(thetalist, philist, colorlist):
 #     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
 #         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-#         omega=omega0, v_r0=0. * u.km/u.s, inc=inc, pa=PA_ang, rmin=300*u.au)
-#     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0)
+#         omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+#     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
 #     # we obtain the distance of each point in the sky
 #     d_sky_au = np.sqrt(x1**2 + z1**2)
 #     # Stream line into arcsec
@@ -302,26 +300,27 @@ for v_r0 in v_rlist:
 #              ls='--', lw=1, label=my_label, color=color0)
 #     # Finally we plot the streamer in velocity
 #     ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, color=color0, linestyle='dashed')
-#     # Now we plot with a starting velocity
-#     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
-#         mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-#         omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
-#     my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
-#     # we obtain the distance of each point in the sky
-#     d_sky_au = np.sqrt(x1**2 + z1**2)
-#     # Stream line into arcsec
-#     dra_stream = -x1.value / dist_Per50
-#     ddec_stream = z1.value / dist_Per50
-#     fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
-#                    frame=Per50_ref).transform_to(FK5)
-#     # First we plot the 3d
-#     ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label, color=color0)
-#     ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
-#     #Then we plot the streamer in the image plane
-#     ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
-#              ls='-', lw=1, label=my_label, color=color0)
-#     # Finally we plot the streamer in velocity
-#     ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, color=color0)
+#
+    # # Now we plot with a starting velocity
+    # (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+    #     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
+    #     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=300*u.au)
+    # my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
+    # # we obtain the distance of each point in the sky
+    # d_sky_au = np.sqrt(x1**2 + z1**2)
+    # # Stream line into arcsec
+    # dra_stream = -x1.value / dist_Per50
+    # ddec_stream = z1.value / dist_Per50
+    # fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
+    #                frame=Per50_ref).transform_to(FK5)
+    # # First we plot the 3d
+    # ax.plot(x1, y1, z1, marker='o', markersize=1, label=my_label, color=color0)
+    # ax.plot(x1[0], y1[0], z1[0], marker='o', color='k')
+    # #Then we plot the streamer in the image plane
+    # ax2.plot(fil.ra, fil.dec, transform=ax2.get_transform('fk5'),
+    #          ls='-', lw=1, label=my_label, color=color0)
+    # # Finally we plot the streamer in velocity
+    # ax3.plot(d_sky_au, v_lsr + vy1, label=my_label, color=color0)
 
 # Plot legend at the end
 # ax.legend()

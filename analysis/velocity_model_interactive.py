@@ -13,14 +13,12 @@ from matplotlib.widgets import Slider, Button
 import matplotlib.pyplot as plt
 import numpy as np
 
-
-
 # Main parameters to generate a streamline
-# Mstar = 0.58*u.Msun
-Mstar = (2.9+2.2+0.58)*u.Msun  # mass of the star and envelope and disk
-# inc = -(67-180)*u.deg
+M_s = 1.71*u.Msun # was 2.9
+M_env = 2.2*u.Msun
+M_disk = 0.58*u.Msun
+Mstar = (M_s+M_env+M_disk)
 inc = (360-(90-67))*u.deg  # should be almost edge on
-# inc = (360-(90-77))*u.deg # should be almost edge on
 PA_ang = -(170-90)*u.deg
 regionsample = 'data/region_streamer_l.reg'
 
@@ -31,8 +29,8 @@ Per50_c = SkyCoord(ra_Per50, dec_Per50, frame='fk5')
 Per50_ref = Per50_c.skyoffset_frame()
 
 # Define the figure where the widgets will be
-fig = plt.figure(figsize=(10, 6))
-plt.subplots_adjust(left=0.25, bottom=0.25)
+fig = plt.figure(figsize=(10, 7))
+plt.subplots_adjust(left=0.1, bottom=0.45)
 
 # Open the image plane
 hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
@@ -52,11 +50,19 @@ ax.set_ylabel('Declination (J2000)')
 # In case we want to zoom in
 ra = 52.2813698
 dec = 31.3648759
-radiusplot = 10. / 3600.
+radiusplot = 12. / 3600.
 zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
                              [dec-radiusplot, dec+radiusplot], 0)
 ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
 ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
+
+regstreamer = pyregion.open('../'+regionsample)
+r2 = regstreamer.as_imagecoord(header)
+patch_list, artist_list = r2.get_mpl_patches_texts()
+for p in patch_list:
+    ax.add_patch(p)
+for a in artist_list:
+    ax.add_artist(a)
 
 # We add the axes to the image plane
 x_b = np.array([1, 0, 0])*1e3/dist_Per50
@@ -113,11 +119,12 @@ zz /= zz.max()  # normalization of probability
 ax3.contourf(xx, yy, zz, cmap='Greys', levels=np.arange(0.1, 1.2, 0.1), vmin=0., vmax=1.1)
 ax3.axhline(v_lsr.value, color='k')
 ax3.set_ylim([6,8])
+ax3.set_xlim([0, 3500])
 
 # We calculate the streamlines for several parameters
 
 
-def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA):
+def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA, rmin):
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=mass, r0=r0, theta0=theta0, phi0=phi0,
         omega=omega0, v_r0=v_r0, inc=inc, pa=PA, rmin=rmin)
@@ -139,34 +146,60 @@ def r0ideal(omega, mass, rcideal):
 
 # Initial parameters
 theta0 = 80. * u.deg  # rotate clockwise
-r_c0 = 300 * u.au
+r_c0 = 250 * u.au
 phi0 = 5. * u.deg  # rotate the plane
 v_r0 = 0. * u.km/u.s
 omega0 = 8e-13 / u.s
 r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
-# rmin = 300*u.au
-rmin = r_c0
+r_min = 300*u.au
+# r_min = r_c0
 # Parameter steps
-delta_theta0 = 1.
+delta_theta0 = 0.5
+delta_phi0 = 0.5
+delta_rc0 = 1
+delta_omega0 = 0.5e-15
+delta_v_r0 = 0.05
 
 # We calculate the initial streamer
-fil0, dsky0, velo0 = get_streamer(Mstar, r0, theta0, phi0, omega0, v_r0, inc, PA_ang)
+fil0, dsky0, velo0 = get_streamer(Mstar, r0, theta0, phi0, omega0, v_r0, inc, PA_ang, r_min)
+annotation = ax3.annotate(r'$r_0 = {}$'.format(np.round(r0,0)), (0.6, 0.1), xycoords='axes fraction', size=12)
+
 line_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
-                      ls='-', lw=1)
+                      ls='-', lw=2)
 line_vel, = ax3.plot(dsky0, velo0)
 
+line_old_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
+                      ls='--', lw=2)
+line_old_vel, = ax3.plot(dsky0, velo0,ls='--')
+
 # We create the sliders
-axcolor = 'lightgoldenrodyellow'
-axtheta0 = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor=axcolor)
-stheta0 = Slider(axtheta0, r'$\theta_0$', 70., 89.9, valinit=theta0.value, valstep=delta_theta0)
+axcolor = 'paleturquoise'
+axtheta0 = plt.axes([0.2, 0.1, 0.6, 0.03], facecolor=axcolor)
+stheta0 = Slider(axtheta0, r'$\theta_0$', 60., 140., valinit=theta0.value, valstep=delta_theta0)
+axphi0 = plt.axes([0.2, 0.15, 0.6, 0.03], facecolor=axcolor)
+sphi0 = Slider(axphi0, r'$\phi_0$', 0., 89.9, valinit=phi0.value, valstep=delta_phi0)
+axrc0 = plt.axes([0.2, 0.2, 0.6, 0.03], facecolor=axcolor)
+src0 = Slider(axrc0, r'$r_{c,0}$', 200, 500, valinit=r_c0.value, valstep=delta_rc0)
+axomega0 = plt.axes([0.2, 0.25, 0.6, 0.03], facecolor=axcolor)
+somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-15, 19e-13, valinit=omega0.value, valstep=delta_omega0)
+axv0 = plt.axes([0.2, 0.3, 0.6, 0.03], facecolor=axcolor)
+sv0 = Slider(axv0, r'$v_{r,0}$', 0, 5, valinit=v_r0.value, valstep=delta_v_r0)
+
+# In the update function, add the parameters per slider
 
 def update(val):
-    theta = stheta0.val* u.deg
-    fil, dsky, velo = get_streamer(Mstar, r0, theta, phi0, omega0, v_r0, inc, PA_ang)
+    theta = stheta0.val * u.deg
+    phi = sphi0.val * u.deg
+    r_c = src0.val * u.au
+    omega = somega0.val / u.s
+    rnew = r0ideal(omega, Mstar, r_c).to(u.au)
+    v_r = sv0.val * u.km / u.s
+    fil, dsky, velo = get_streamer(Mstar, rnew, theta, phi, omega, v_r, inc, PA_ang, r_min)
     line_image.set_xdata(fil.ra)
     line_image.set_ydata(fil.dec)
     line_vel.set_xdata(dsky)
     line_vel.set_ydata(velo)
+    annotation.set_text(r'$r_0 = {}$'.format(np.round(rnew,0)))
     fig.canvas.draw_idle()
 
 

@@ -15,7 +15,7 @@ import numpy as np
 
 # Main parameters to generate a streamline
 M_s = 1.71*u.Msun # was 2.9
-M_env = 2.2*u.Msun
+M_env = 0.18*u.Msun # was 2.2
 M_disk = 0.58*u.Msun
 Mstar = (M_s+M_env+M_disk)
 inc = (360-(90-67))*u.deg  # should be almost edge on
@@ -147,16 +147,17 @@ def r0ideal(omega, mass, rcideal):
 # Initial parameters
 theta0 = 80. * u.deg  # rotate clockwise
 r_c0 = 250 * u.au
+r0 = 3500 * u.au
 phi0 = 5. * u.deg  # rotate the plane
 v_r0 = 0. * u.km/u.s
 omega0 = 8e-13 / u.s
-r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
+# r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 r_min = 300*u.au
 # r_min = r_c0
 # Parameter steps
 delta_theta0 = 0.5
 delta_phi0 = 0.5
-delta_rc0 = 1
+delta_rc0 = 10
 delta_omega0 = 0.5e-15
 delta_v_r0 = 0.05
 
@@ -179,9 +180,10 @@ stheta0 = Slider(axtheta0, r'$\theta_0$', 60., 140., valinit=theta0.value, valst
 axphi0 = plt.axes([0.2, 0.15, 0.6, 0.03], facecolor=axcolor)
 sphi0 = Slider(axphi0, r'$\phi_0$', 0., 89.9, valinit=phi0.value, valstep=delta_phi0)
 axrc0 = plt.axes([0.2, 0.2, 0.6, 0.03], facecolor=axcolor)
-src0 = Slider(axrc0, r'$r_{c,0}$', 200, 500, valinit=r_c0.value, valstep=delta_rc0)
+# src0 = Slider(axrc0, r'$r_{c,0}$', 200, 500, valinit=r_c0.value, valstep=delta_rc0)
+src0 = Slider(axrc0, r'$r_0$', 1500, 10000, valinit=r0.value, valstep=delta_rc0)
 axomega0 = plt.axes([0.2, 0.25, 0.6, 0.03], facecolor=axcolor)
-somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-15, 19e-13, valinit=omega0.value, valstep=delta_omega0)
+somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-16, 19e-13, valinit=omega0.value, valstep=delta_omega0)
 axv0 = plt.axes([0.2, 0.3, 0.6, 0.03], facecolor=axcolor)
 sv0 = Slider(axv0, r'$v_{r,0}$', 0, 5, valinit=v_r0.value, valstep=delta_v_r0)
 
@@ -190,9 +192,10 @@ sv0 = Slider(axv0, r'$v_{r,0}$', 0, 5, valinit=v_r0.value, valstep=delta_v_r0)
 def update(val):
     theta = stheta0.val * u.deg
     phi = sphi0.val * u.deg
-    r_c = src0.val * u.au
+    # r_c = src0.val * u.au
     omega = somega0.val / u.s
-    rnew = r0ideal(omega, Mstar, r_c).to(u.au)
+    # rnew = r0ideal(omega, Mstar, r_c).to(u.au)
+    rnew = src0.val * u.au
     v_r = sv0.val * u.km / u.s
     fil, dsky, velo = get_streamer(Mstar, rnew, theta, phi, omega, v_r, inc, PA_ang, r_min)
     line_image.set_xdata(fil.ra)

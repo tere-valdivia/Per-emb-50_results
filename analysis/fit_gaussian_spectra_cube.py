@@ -12,12 +12,15 @@ import os
 
 # Define the velocities where there is emission to calculate the rms
 
-cubefile = H2CO_303_202_s
+# cubefile = H2CO_303_202_s
+cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 # Where we estimate the line is
 velinit = 5.5 * u.km/u.s
 velend = 9.5 * u.km/u.s
-fitregionfile = '../analysis/H2CO_fitregion.reg'
-starting_point = (70, 82)
+# fitregionfile = '../analysis/H2CO_fitregion.reg'
+fitregionfile = 'C18O_fitregion.reg'
+# starting_point = (70, 82)
+starting_point = (126,135)
 
 if not os.path.exists('../'+cubefile+'_fitcube.fits'):
     # The cube to fit must be smaller than the small cube we set earlier

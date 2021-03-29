@@ -11,6 +11,7 @@ import regions
 import os
 
 # Define the velocities where there is emission to calculate the rms
+# Maybe for C18O we need to select a smaller range of velocities
 
 # cubefile = H2CO_303_202_s
 cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
@@ -22,7 +23,7 @@ fitregionfile = 'C18O_fitregion.reg'
 # starting_point = (70, 82)
 starting_point = (126,135)
 
-if not os.path.exists('../'+cubefile+'_fitcube.fits'):
+if not os.path.exists(cubefile+'_fitcube.fits'):
     # The cube to fit must be smaller than the small cube we set earlier
     # and must be in K and km/s
     cube1 = SpectralCube.read(cubefile+'.fits').with_spectral_unit(u.km/u.s)
@@ -34,7 +35,7 @@ if not os.path.exists('../'+cubefile+'_fitcube.fits'):
     subcube = cube1.subcube_from_regions(regionlist)
     subcube.hdu.writeto(cubefile+'_fitcube.fits')
 
-spc = pyspeckit.Cube('../'+cubefile+'_fitcube.fits')
+spc = pyspeckit.Cube(cubefile+'_fitcube.fits')
 header = spc.header
 ra = header['ra']
 dec = header['dec']
@@ -56,6 +57,33 @@ else:
 
 
 def filter(spc, rms, rmslevel, velinit, velend, negative=True, errorfrac=0.5, epsilon=1.e-5):
+    """
+    Replace the pixels in the fitted cube with np.nan where the fit is not
+    good enough according to our criteria.
+
+    The criteria that a pixel must have are:
+    - The error is not zero
+    - The value must not be negative (in this case we know the moment 1 must be
+    positive, so we specify negative=True, can be changed)
+    - The error fraction is lower than errorfrac
+    - The moment 1 value must be within the range [velinit,velend]
+    - The peak value must be larger than rms times rmslevel
+    - The weighted velocity dispersion must be smaller than the absolute
+    value of velend-velinit
+    - If one pixel in a spectra is np.nan, all the spectra must be nan (sanity
+    check)
+
+    Args:
+        variable (type): description
+
+    Returns:
+        type: description
+
+    Raises:
+        Exception: description
+
+    """
+
     zeromask = np.where(np.abs(spc.errcube[0]) < epsilon, 1, 0) + \
         np.where(np.abs(spc.errcube[1]) < epsilon, 1, 0) + \
         np.where(np.abs(spc.errcube[2]) < epsilon, 1, 0)
@@ -93,7 +121,7 @@ def filter(spc, rms, rmslevel, velinit, velend, negative=True, errorfrac=0.5, ep
 fitfile = cubefile + '_1G_fitparams.fits'
 if os.path.exists(fitfile):
     spc.load_model_fit(fitfile, 3, fittype='gaussian')
-    spc = filter(spc, rms, 4, velinit, velend)
+    # spc = filter(spc, rms, 4, velinit, velend)
     fittedmodel = spc.get_modelcube()
     spc.write_fit(fitfile, overwrite=True)
 else:

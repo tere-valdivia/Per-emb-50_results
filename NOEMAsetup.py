@@ -22,12 +22,15 @@ H2CO_303_202_s_pb = 'H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_
 SO_55_44 = 'SO_55_44/CDconfig/Per-emb-50_CD_l009l048_uvsub_SO_multi'
 SO_55_44_s = 'SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
 SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
-C18O_2_1 = 'C18O/CDconfig/Per-emb-50_CD_l025l064_uvsub_C18O_multi'
+C18O_2_1 = 'C18O/CDconfig/JEP/Per-emb-50_CD_l025l064_uvsub_C18O_multi'
+C18O_2_1_s = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+
 
 # Data files for analysis
 H2CO_303_202_TdV = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_total_mom0'
 H2CO_303_202_TdV_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_stream_mom0'
-
+C18O_2_1_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_fitcube_total_mom0'
+C18O_2_1_fit_Vc = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_1G_Vc'
 H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_Vc'
 region_streamer = 'data/region_streamer.reg'
 region_streamer_s = 'data/region_streamer_s.reg'
@@ -45,7 +48,7 @@ def pb_noema(freq_obs):
     :return: The primary beam FWHM in arcsec
     """
     return (64.1 * u.arcsec * 72.78382 * u.GHz / freq_obs).decompose()
-    
+
 def pb_sma(freq_obs):
     """
     Primary beam diameter for SMA at the observed frequency.

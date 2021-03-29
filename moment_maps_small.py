@@ -2,6 +2,8 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 from spectral_cube import SpectralCube
+import sys
+sys.path.append('../')
 from NOEMAsetup import *
 import os
 
@@ -9,14 +11,14 @@ import os
 This code computes the moments 0, 1 and 8 and the linewidth map for the cube which
 is used to fit gaussian profiles later and of the complete cubes
 '''
-mask = True
+mask = False
 velinit = 5.5 * u.km/u.s
 # velend = 8.0 * u.km/u.s  # streamline feature
 velend = 9.5 * u.km/u.s # total emission
 # rangename = 'stream'
 rangename = 'total'
 
-filename = H2CO_303_202_s + '_fitcube'
+filename = C18O_2_1_s + '_fitcube'
 
 
 cube = SpectralCube.read(filename+'.fits').with_spectral_unit(u.km/u.s)

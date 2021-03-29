@@ -14,14 +14,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Main parameters to generate a streamline
+# For C18O, we try first with the minimum mass possible
 M_s = 1.71*u.Msun # was 2.9
-M_env = 0.18*u.Msun # was 2.2
+M_env = 0.18*u.Msun # was 2.2, 0.18 within 3500 AU
 M_disk = 0.58*u.Msun
 Mstar = (M_s+M_env+M_disk)
-inc = (360-(90-67))*u.deg  # should be almost edge on
-PA_ang = -(170-90)*u.deg
-regionsample = 'data/region_streamer_l.reg'
-
+# Mstar = M_s
+# Disk inclination system (i=0 is edge on)
+# inc = -(90-67) * u.deg
+# PA_ang = (170+90)*u.deg
+# C18O proposed system (not exactly counter-rotating)
+# inc = -(90-67) * u.deg
+# PA_ang = (170+90+180)*u.deg
+# C18O proposed system (10 deg)
+# inc = -(90-67) * u.deg
+# PA_ang = (100)*u.deg
+# C18O proposed system 2 (faceon)
+inc = -(67) * u.deg
+PA_ang = (170+90)*u.deg
+regionsample = 'data/region_streamer_C18O_test4.reg'
+# regionsample = 'data/region_streamer_C18O_test4.reg'
+imagename = '../'+C18O_2_1_TdV+'.fits'
+vcname = '../'+C18O_2_1_fit_Vc+'.fits'
 # Fixed parameter
 v_lsr = 7.48*u.km/u.s  # +- 0.14 km/s according to out C18O data
 
@@ -33,7 +47,9 @@ fig = plt.figure(figsize=(10, 7))
 plt.subplots_adjust(left=0.1, bottom=0.45)
 
 # Open the image plane
-hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
+# hdu = fits.open('../'+H2CO_303_202_TdV_s+'.fits')
+hdu = fits.open(imagename)
+
 header = hdu[0].header
 freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
 wcs = WCS(header)
@@ -48,13 +64,13 @@ hdu.close()
 ax.set_xlabel('Right Ascension (J2000)')
 ax.set_ylabel('Declination (J2000)')
 # In case we want to zoom in
-ra = 52.2813698
-dec = 31.3648759
-radiusplot = 12. / 3600.
-zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
-                             [dec-radiusplot, dec+radiusplot], 0)
-ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
-ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
+# ra = 52.2813698
+# dec = 31.3648759
+# radiusplot = 12. / 3600.
+# zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
+#                              [dec-radiusplot, dec+radiusplot], 0)
+# ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
+# ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
 
 regstreamer = pyregion.open('../'+regionsample)
 r2 = regstreamer.as_imagecoord(header)
@@ -96,15 +112,14 @@ ax3.set_ylabel(r"V$_{lsr}$ (km s$^{-1}$)")
 
 # Obtain the offset radius from Per-emb-50 and the v_lsr for each
 # pixel in the streamer region
-r_proj, v_los = per_emb_50_get_vc_r('../'+H2CO_303_202_fit_Vc+'.fits',
-                                    '../'+regionsample)
+r_proj, v_los = per_emb_50_get_vc_r(vcname, '../'+regionsample)
 # create the grid for the kernel distribution
 # x is projected distance
 xmin = 0
-xmax = 3500
+xmax = 5000
 # y is velocity lsr
 ymin = 6.
-ymax = 8.
+ymax = 8.5
 
 xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
 positions = np.vstack([xx.ravel(), yy.ravel()])
@@ -118,16 +133,16 @@ zz /= zz.max()  # normalization of probability
 # We plot in the corresponding axis
 ax3.contourf(xx, yy, zz, cmap='Greys', levels=np.arange(0.1, 1.2, 0.1), vmin=0., vmax=1.1)
 ax3.axhline(v_lsr.value, color='k')
-ax3.set_ylim([6,8])
-ax3.set_xlim([0, 3500])
+ax3.set_ylim([ymin,ymax])
+ax3.set_xlim([xmin,xmax])
 
 # We calculate the streamlines for several parameters
 
 
-def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA, rmin):
+def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA):
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=mass, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA, rmin=rmin)
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA)
     # we obtain the distance of each point in the sky
     d_sky_au = np.sqrt(x1**2 + z1**2)
     # Stream line into arcsec
@@ -145,25 +160,26 @@ def r0ideal(omega, mass, rcideal):
 
 
 # Initial parameters
-theta0 = 80. * u.deg  # rotate clockwise
-r_c0 = 250 * u.au
-r0 = 3500 * u.au
-phi0 = 5. * u.deg  # rotate the plane
-v_r0 = 0. * u.km/u.s
-omega0 = 8e-13 / u.s
+theta0 = 104 * u.deg  # rotate clockwise
+# r_c0 = 250 * u.au
+r0 = 3330 * u.au
+phi0 = (168)* u.deg  # rotate the plane
+v_r0 = 0 * u.km/u.s
+omega0 = 14.41e-13 / u.s
 # r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
-r_min = 300*u.au
+# r_min = 100*u.au
 # r_min = r_c0
 # Parameter steps
 delta_theta0 = 0.5
 delta_phi0 = 0.5
-delta_rc0 = 10
+delta_r0 = 10
 delta_omega0 = 0.5e-15
 delta_v_r0 = 0.05
 
 # We calculate the initial streamer
-fil0, dsky0, velo0 = get_streamer(Mstar, r0, theta0, phi0, omega0, v_r0, inc, PA_ang, r_min)
-annotation = ax3.annotate(r'$r_0 = {}$'.format(np.round(r0,0)), (0.6, 0.1), xycoords='axes fraction', size=12)
+fil0, dsky0, velo0 = get_streamer(Mstar, r0, theta0, phi0, omega0, v_r0, inc, PA_ang)
+r_c = SL.r_cent(Mstar,omega0,r0)
+annotation = ax3.annotate(r'$r_c = {}$'.format(np.round(r_c,0)), (0.6, 0.1), xycoords='axes fraction', size=12)
 
 line_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
                       ls='-', lw=2)
@@ -176,12 +192,12 @@ line_old_vel, = ax3.plot(dsky0, velo0,ls='--')
 # We create the sliders
 axcolor = 'paleturquoise'
 axtheta0 = plt.axes([0.2, 0.1, 0.6, 0.03], facecolor=axcolor)
-stheta0 = Slider(axtheta0, r'$\theta_0$', 60., 140., valinit=theta0.value, valstep=delta_theta0)
+stheta0 = Slider(axtheta0, r'$\theta_0$', 0, 180., valinit=theta0.value, valstep=delta_theta0)
 axphi0 = plt.axes([0.2, 0.15, 0.6, 0.03], facecolor=axcolor)
-sphi0 = Slider(axphi0, r'$\phi_0$', 0., 89.9, valinit=phi0.value, valstep=delta_phi0)
-axrc0 = plt.axes([0.2, 0.2, 0.6, 0.03], facecolor=axcolor)
+sphi0 = Slider(axphi0, r'$\phi_0$', -90, 270, valinit=phi0.value, valstep=delta_phi0)
+axr0 = plt.axes([0.2, 0.2, 0.6, 0.03], facecolor=axcolor)
 # src0 = Slider(axrc0, r'$r_{c,0}$', 200, 500, valinit=r_c0.value, valstep=delta_rc0)
-src0 = Slider(axrc0, r'$r_0$', 1500, 10000, valinit=r0.value, valstep=delta_rc0)
+sr0 = Slider(axr0, r'$r_0$', 1500, 10000, valinit=r0.value, valstep=delta_r0)
 axomega0 = plt.axes([0.2, 0.25, 0.6, 0.03], facecolor=axcolor)
 somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-16, 19e-13, valinit=omega0.value, valstep=delta_omega0)
 axv0 = plt.axes([0.2, 0.3, 0.6, 0.03], facecolor=axcolor)
@@ -195,14 +211,15 @@ def update(val):
     # r_c = src0.val * u.au
     omega = somega0.val / u.s
     # rnew = r0ideal(omega, Mstar, r_c).to(u.au)
-    rnew = src0.val * u.au
+    rnew = sr0.val * u.au
     v_r = sv0.val * u.km / u.s
-    fil, dsky, velo = get_streamer(Mstar, rnew, theta, phi, omega, v_r, inc, PA_ang, r_min)
+    fil, dsky, velo = get_streamer(Mstar, rnew, theta, phi, omega, v_r, inc, PA_ang)
     line_image.set_xdata(fil.ra)
     line_image.set_ydata(fil.dec)
     line_vel.set_xdata(dsky)
     line_vel.set_ydata(velo)
-    annotation.set_text(r'$r_0 = {}$'.format(np.round(rnew,0)))
+    r_cnew = SL.r_cent(Mstar, omega, rnew)
+    annotation.set_text(r'$r_c = {}$'.format(np.round(r_cnew,0)))
     fig.canvas.draw_idle()
 
 

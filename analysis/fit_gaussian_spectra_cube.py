@@ -9,19 +9,23 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import regions
 import os
-
+from astropy.modeling.functional_models import Gaussian2D
+from astropy.coordinates import SkyCoord
 # Define the velocities where there is emission to calculate the rms
-# Maybe for C18O we need to select a smaller range of velocities
+# For pbcor, we need to give it the rms
 
-# cubefile = H2CO_303_202_s
-cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+cubefile = '../' + H2CO_303_202_s_pb
+cubefile_nonpb = '../' + H2CO_303_202_s
+# cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
+# cubefile_nonpb = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 # Where we estimate the line is
 velinit = 5.5 * u.km/u.s
 velend = 9.5 * u.km/u.s
 # fitregionfile = '../analysis/H2CO_fitregion.reg'
-fitregionfile = 'C18O_fitregion.reg'
-# starting_point = (70, 82)
-starting_point = (126,135)
+fitregionfile = 'H2CO_fitregion.reg'
+# starting_point = (70, 82) #H2CO
+starting_point = (53,116)
+# starting_point = (126,135) #C18O
 
 if not os.path.exists(cubefile+'_fitcube.fits'):
     # The cube to fit must be smaller than the small cube we set earlier
@@ -37,15 +41,24 @@ if not os.path.exists(cubefile+'_fitcube.fits'):
 
 spc = pyspeckit.Cube(cubefile+'_fitcube.fits')
 header = spc.header
-ra = header['ra']
+ra = header['ra'] #phasecent
 dec = header['dec']
 naxis = header['naxis1']
+freq = (header['RESTFREQ']/1e9) * u.GHz
 wcsspec = WCS(header).spectral
 wcscel = WCS(header).celestial
 chanlims = [wcsspec.world_to_pixel(velinit).tolist(), wcsspec.world_to_pixel(velend).tolist()]
-rms = np.std(np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))
-rmsmap = np.ones(np.shape(spc.cube)) * rms
 
+# only for the rms
+stdev_kernel = (pb_noema(freq).to(u.deg)/np.sqrt(8*np.log(2))/(header['CDELT2']*u.deg)).value
+center_kernel = wcscel.all_world2pix([ra], [dec],0)
+pbkernel = Gaussian2D(amplitude=1, x_mean=center_kernel[0][0], y_mean=center_kernel[1][0], x_stddev=stdev_kernel, y_stddev=stdev_kernel)
+xx, yy = np.meshgrid(np.linspace(0,header['NAXIS1']-1, header['NAXIS1']),np.linspace(0,header['NAXIS2']-1, header['NAXIS2']))
+pbcorrector = pbkernel(xx, yy)
+rmscubefile = cubefile_nonpb+'_fitcube.fits'
+spcrms = pyspeckit.Cube(rmscubefile)
+rms = np.nanstd(np.vstack([spcrms.cube[:int(np.min(chanlims))], spcrms.cube[int(np.max(chanlims)):]])) #channels must be the same
+rmsmap = np.ones(np.shape(spc.cube)) * (rms / pbcorrector)
 momentsfile = cubefile+'_fitcube_moments.fits'
 
 if os.path.exists(momentsfile):

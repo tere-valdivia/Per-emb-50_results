@@ -30,8 +30,14 @@ Mstar = (M_s+M_env+M_disk)
 # inc = -(90-67) * u.deg
 # PA_ang = (100)*u.deg
 # C18O proposed system 2 (faceon)
-inc = -(67) * u.deg
-PA_ang = (170+90)*u.deg
+# inc = -(67) * u.deg
+# PA_ang = (170+90+180)*u.deg
+# # C18O proposed system 3 (mid face-edge on)
+# inc = -(45) * u.deg
+# PA_ang = (170+90+180)*u.deg
+# Wrong disk inclination system (-170 deg)
+inc = -(90-67) * u.deg
+PA_ang = (20+90)*u.deg
 regionsample = 'data/region_streamer_C18O_test4.reg'
 # regionsample = 'data/region_streamer_C18O_test4.reg'
 imagename = '../'+C18O_2_1_TdV+'.fits'

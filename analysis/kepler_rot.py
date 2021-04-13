@@ -42,7 +42,7 @@ distance_array = offset_array.value * arcsectoau * u.au
 
 offset, vel = np.meshgrid(distance_array, vel_array)
 rms = 0.01
-contourlevels = np.array([5, 15, 25]) * rms
+contourlevels = np.array([5,15,25]) * rms
 vmin = 0
 vmax = 0.4
 
@@ -50,8 +50,8 @@ fig = plt.figure(figsize=(4,4))
 ax = fig.add_subplot(111)
 norm = simple_norm(pvdata, 'linear', min_cut=vmin,max_cut=vmax)
 pcolor = ax.pcolor(offset.value, vel.value, pvdata, shading='auto', norm=norm, cmap='Blues')
-contours = ax.contour(offset.value, vel.value, pvdata, contourlevels, colors='k')
-fig.colorbar(pcolor, ax=ax)
+contours = ax.contour(offset.value, vel.value, pvdata, contourlevels, colors='k', linewidths=0.5)
+fig.colorbar(pcolor, ax=ax, label=r'Intensity (Jy beam$^{-1}$)')
 
 
 # Now we plot a kepler rotation over it
@@ -70,7 +70,7 @@ for mass, color, ls in zip(mstar, colors,  linestyles):
     ax.plot(radius, velocity_pos, ls=ls, color=color,
             label=r'$M_{\star}='+str(mass.value)+r'M_{\odot}$')
     ax.plot(radius_neg, velocity_neg, ls=ls, color=color)
-ax.axhline(v_lsr.value,color='m', linestyle=':')
+ax.axhline(v_lsr.value,color='k', linestyle=':', linewidth=3)
 ax.set_ylim([0, 14])
 ax.set_ylabel(r'$v_{LSR}$ (km s$^{-1}$)')
 ax.set_xlim([-1200, 1200])
@@ -81,4 +81,4 @@ ax.annotate(r'i = 67$^{\circ}$', (0.05, 0.01), xycoords='axes fraction', color='
 
 bar = AnchoredSizeBar(ax.transData, 300, '300 AU', 2,pad=0.1, borderpad=0.5, sep=5,  frameon=False, color='k', size_vertical=0.08)
 ax.add_artist(bar)
-# fig.savefig('PV_diagram_SO_170_with_Kepler_rot_length1600AU_Fiorellino_21.pdf', dpi=300, bbox_inches='tight')
+fig.savefig('PV_diagram_SO_170_with_Kepler_rot_length1600AU_Fiorellino_21.pdf', dpi=300, bbox_inches='tight')

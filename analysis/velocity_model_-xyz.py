@@ -16,7 +16,7 @@ import pickle
 '''
 This code is to test different combinations of parameters to get the best
 ones for the streamer in Per-emb-50
-Aim for a r_c about 100 AU
+Aim for a r_c about 300 AU
 
 in this code, i=0 is an edge on disk
 since correcting the angles, not ran again
@@ -25,16 +25,17 @@ since correcting the angles, not ran again
 # Main parameters to generate a streamline
 # The mass is currently in testing
 M_s = 1.71*u.Msun # was 2.9
-M_env = 0.18*u.Msun # within 3500 au is 0.18, was 2.2
+# M_env = 0.18*u.Msun # within 3500 au is 0.18, was 2.2
+M_env = 0.39*u.Msun
 M_disk = 0.58*u.Msun
-Mstar = (M_s+M_env+M_disk)
-# Mstar = M_s
+# Mstar = (M_s+M_env+M_disk)
+Mstar = 8.3 *u.Msun
 # Disk inclination system
 # inc = -(90-67) * u.deg
 # PA_ang = (170+90)*u.deg
 # C18O proposed system
 inc = -(90-67) * u.deg
-PA_ang = (170+90+180)*u.deg
+PA_ang = (20+90)*u.deg
 regionsample = 'data/region_streamer_C18O_test4.reg'
 savekernel = False
 savemodel = False
@@ -159,20 +160,20 @@ ax3.axhline(v_lsr.value, color='k')
 ax3.set_ylim([ymin,ymax])
 ax3.set_xlim([xmin, xmax])
 # We calculate the streamlines for several parameters
-fig3.savefig('v_lsr_vs_rproj_C18O_reg_test4.pdf', dpi=300,bbox_inches='tight')
+# fig3.savefig('v_lsr_vs_rproj_C18O_reg_test4.pdf', dpi=300,bbox_inches='tight')
 
 def r0ideal(omega, mass, rcideal):
     r0i = (SL.G * Mstar * rcideal/(omega**2))**(1/4.)
     return r0i
 
 # Constant parameters for testing
-theta0 = 59 * u.deg  # rotate clockwise
+theta0 = 89. * u.deg  # rotate clockwise
 # r_c0 = 300 * u.au
 # phi0 = 90. * u.deg  # rotate the plane
-phi0 = 25.6 * u.deg  # rotate the plane
-v_r0 = 1.6 * u.km/u.s
-omega0 = 5.35e-13 / u.s
-r0 = 3330*u.au
+phi0 = 173.5 * u.deg  # rotate the plane
+v_r0 = 0 * u.km/u.s
+omega0 = 11e-13 / u.s
+r0 = 3670*u.au
 #r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 # print('The ideal r0 for '+str(omega0)+' is '+str(r0))
 
@@ -350,14 +351,15 @@ if savekernel:
         pickle.dump(KDE_vel_rad, f)
 
 if savemodel:
-    stream_params = 'streamer_model_H2CO_2.2Msun_env_params.pickle'
+    stream_params = 'streamer_model_H2CO_0.39Msun_env_params.pickle'
     stream_model_params = {'theta0': theta0, 'r0': r0, 'phi0': phi0,
-                           'v_r0': v_r0, 'omega0': omega0, 'v_lsr': v_lsr}
+                           'v_r0': v_r0, 'omega0': omega0, 'v_lsr': v_lsr, 'inc': inc,
+                           'PA': PA_ang}
     with open(stream_params, 'wb') as f:
         pickle.dump(stream_model_params, f)
 
 
-    stream_pickle = 'streamer_model_H2CO_2.2Msun_env_vr.pickle'
+    stream_pickle = 'streamer_model_H2CO_0.39Msun_env_vr.pickle'
     stream_model = {'ra': fil.ra.value*u.deg, 'dec': fil.dec.value*u.deg,
                     'd_sky_au': d_sky_au, 'vlsr': v_lsr + vy1}
     with open(stream_pickle, 'wb') as f:

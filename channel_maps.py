@@ -6,22 +6,24 @@ from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
-
-folder = 'SO_55_44/'
-cubename = folder+'Per-emb-50_C_l009l048_uvsub_SO_multi'
+"""
+Does not work
+"""
+folder = 'C18O/CDconfig/JEP/'
+cubename = folder+'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_fitcube'
 cubehead = fits.getheader(cubename+'.fits')
 wcs = WCS(cubehead)
 wcsvel = wcs.sub([3])
-continuum = 'SO_55_44/Per-emb-50_C_l009l048_cont.fits'
+continuum = 'continuum/Per-emb-50_CD_li_cont_rob1-selfcal.fits'
 contlevel = 0.007
-contcolor = 'red'
-stretch = 'arcsinh'
+contcolor = 'white'
+stretch = 'linear'
 velstart = 6
 velend = 9
 rows = 4
 cols = 4
-vmin = 0.001
-vmax = 0.5
+vmin = 0.
+vmax = 6
 centerra = 52.2811737
 centerdec = 31.3640438
 radiusplot = 15
@@ -67,6 +69,6 @@ marker = [[[SkyCoord(phasecent[0], phasecent[1], unit=(u.deg, u.deg)), {'s': 16,
 
 easy_aplpy.plot.grid(cubename+'.fits', [rows, cols], chans, cmap='viridis',
                      out=cubename+'_chanmap_'+stretch+'.png',
-                     vmin=vmin, vmax=vmax, stretch=stretch, recenter=[
-                     SkyCoord(centerra, centerdec, unit=(u.deg, u.deg)), radiusplot*u.arcsec],
+                     vmin=vmin, vmax=vmax, stretch=stretch,
                      markers=marker)
+                     #recenter=[SkyCoord(centerra, centerdec, unit=(u.deg, u.deg)), radiusplot*u.arcsec]

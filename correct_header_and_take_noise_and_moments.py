@@ -15,9 +15,9 @@ moments 0, 1 and 2 of the image
 
 """
 
-folder = '13CO/CDconfig/'
-cubename = folder + 'Per-emb-50_CD_l027l066_uvsub_13CO'
-emptyheader = True
+folder = 'C18O/CDconfig/JEP/'
+cubename = folder + 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+emptyheader = False
 
 velstart = -1  # km/s
 velend = 14  # km/s

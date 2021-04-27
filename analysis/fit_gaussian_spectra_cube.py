@@ -14,8 +14,9 @@ from astropy.coordinates import SkyCoord
 # Define the velocities where there is emission to calculate the rms
 # For pbcor, we need to give it the rms
 
-cubefile = '../' + H2CO_303_202_s_pb
-cubefile_nonpb = '../' + H2CO_303_202_s
+pbcor = False
+cubefile = '../SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+# cubefile_nonpb = '../' + H2CO_303_202_s
 # cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
 # cubefile_nonpb = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 # Where we estimate the line is
@@ -50,17 +51,23 @@ wcscel = WCS(header).celestial
 chanlims = [wcsspec.world_to_pixel(velinit).tolist(), wcsspec.world_to_pixel(velend).tolist()]
 
 # only for the rms
-stdev_kernel = (pb_noema(freq).to(u.deg)/np.sqrt(8*np.log(2))/(header['CDELT2']*u.deg)).value
-center_kernel = wcscel.all_world2pix([ra], [dec],0)
-pbkernel = Gaussian2D(amplitude=1, x_mean=center_kernel[0][0], y_mean=center_kernel[1][0], x_stddev=stdev_kernel, y_stddev=stdev_kernel)
-xx, yy = np.meshgrid(np.linspace(0,header['NAXIS1']-1, header['NAXIS1']),np.linspace(0,header['NAXIS2']-1, header['NAXIS2']))
-pbcorrector = pbkernel(xx, yy)
-rmscubefile = cubefile_nonpb+'_fitcube.fits'
-spcrms = pyspeckit.Cube(rmscubefile)
-rms = np.nanstd(np.vstack([spcrms.cube[:int(np.min(chanlims))], spcrms.cube[int(np.max(chanlims)):]])) #channels must be the same
-rmsmap = np.ones(np.shape(spc.cube)) * (rms / pbcorrector)
-momentsfile = cubefile+'_fitcube_moments.fits'
+if pbcor:
+    stdev_kernel = (pb_noema(freq).to(u.deg)/np.sqrt(8*np.log(2))/(header['CDELT2']*u.deg)).value
+    center_kernel = wcscel.all_world2pix([ra], [dec],0)
+    pbkernel = Gaussian2D(amplitude=1, x_mean=center_kernel[0][0], y_mean=center_kernel[1][0], x_stddev=stdev_kernel, y_stddev=stdev_kernel)
+    xx, yy = np.meshgrid(np.linspace(0,header['NAXIS1']-1, header['NAXIS1']),np.linspace(0,header['NAXIS2']-1, header['NAXIS2']))
+    pbcorrector = pbkernel(xx, yy)
+    # Be sure you have ran the previous section to have a _fitcube
+    rmscubefile = cubefile_nonpb+'_fitcube.fits'
+    spcrms = pyspeckit.Cube(rmscubefile)
+    rms = np.nanstd(np.vstack([spcrms.cube[:int(np.min(chanlims))], spcrms.cube[int(np.max(chanlims)):]])) #channels must be the same
+    rmsmap = np.ones(np.shape(spc.cube)) * (rms / pbcorrector)
 
+else:
+    rms = np.nanstd(np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))
+    rmsmap = np.ones(np.shape(spc.cube)) * rms
+
+momentsfile = cubefile+'_fitcube_moments.fits'
 if os.path.exists(momentsfile):
     spc.momentcube = fits.getdata(momentsfile)
 else:
@@ -150,7 +157,6 @@ else:
     spc.write_fit(fitfile)
     fittedmodel = spc.get_modelcube()
 
-# # TODO: Separate the cube into 2D fits each with one parameter
 tmax, vlsr, sigmav = spc.parcube
 key_list = ['NAXIS3', 'CRPIX3', 'CDELT3', 'CUNIT3', 'CTYPE3', 'CRVAL3']
 

@@ -3,7 +3,7 @@ import numpy as np
 from astropy.io import fits
 import matplotlib as mpl
 from matplotlib import rc
-from astropy.constants import c, h, k_B
+from astropy.constants import c, h, k_B, m_p
 
 mpl.rcParams['xtick.direction'] = 'in'
 mpl.rcParams['ytick.direction'] = 'in'
@@ -200,8 +200,8 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     TdVin must be in K km/s
     '''
     nu = 219560.3541 * u.MHz
-    constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)/5
+    constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
     Eu = 15.81 * u.K
-    NC18O = constant * Qrot(B0, Tex) * np.exp((Eu / Tex)).decompose().value / \
+    NC18O = constant * Qrot(B0, Tex)/5 * np.exp((Eu.value / Tex.value)) / \
         (np.exp(10.54/Tex.value)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
     return NC18O.to(u.cm**(-2))

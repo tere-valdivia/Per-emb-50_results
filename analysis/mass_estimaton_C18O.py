@@ -37,7 +37,7 @@ def Qrot(B0, Tex):
     The partition function is adimensional,  so the function returns a float
     """
     taylorapp = k_B * Tex / (h * B0) + 1./3.
-    return taylorapp.value
+    return taylorapp
 
 def N_C18O_21(TdV, B0, Tex, f=1):
     '''
@@ -57,8 +57,8 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     nu = 219560.3541 * u.MHz
     constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
     Eu = 15.81 * u.K
-    NC18O = constant * Qrot(B0, Tex)/5 * np.exp((Eu.value / Tex.value)) / \
-        (np.exp(10.54/Tex.value)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
+    NC18O = constant * Qrot(B0, Tex)/5 * np.exp(Eu / Tex) / \
+        (np.exp(10.54*u.K/Tex)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
     return NC18O.to(u.cm**(-2))
 
 '''
@@ -76,6 +76,9 @@ distance = (dist_Per50 * u.pc).to(u.cm)
 mu_H2 = 2.7
 velinit = 5.5 * u.km/u.s
 velend = 9.5 * u.km/u.s
+Texlist = np.array([10,11,12,13,14,15])* u.K
+B0 = (54891.420 * u.MHz).to(1/u.s)
+
 
 '''
 End inputs
@@ -120,13 +123,13 @@ k_streamer_cube = streamer_cube.to(u.K)
 # do a moment 0
 # As it is the moment 0 of C18O where H2CO is positive,C18O can be negative
 mom0 = k_streamer_cube.moment(order=0)
+NC18Oheader = mom0.header
+mom0 = mom0.value * mom0.unit #Transform from type Projection to type Quantity
 mom0[np.where(mom0.value < 0.0)] = np.nan * u.K * u.km/u.s
 wcsmom = WCS(newheaderC18O).celestial
 # for now,lets assume a constant Tex
-Texlist = np.array([10,11,12,13,14,15])* u.K
-B0 = (54891.420 * u.MHz).to(1/u.s)
 
-NC18Oheader = wcsmom.to_header()
+
 NC18Oheader['bmaj'] = newheaderC18O['bmaj']
 NC18Oheader['bmin'] = newheaderC18O['bmin']
 NC18Oheader['bpa'] = newheaderC18O['bpa']
@@ -164,15 +167,14 @@ for Tex in Texlist:
     results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
     results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
     results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
-
     # Now, we calculate the column density of H2
     results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
     NH2 = NC18O * X_C18O
-    NH2tot = NH2.nansum()
+    NH2tot = np.nansum(NH2)
     results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
     MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
-    results_mass.loc[Tex.value, 'M (kg)'] = MH2.value
-    print(Tex, MH2)
-    results_mass.loc[Tex.value, 'M (M_sun)'] = ((MH2.value)*u.kg).to(u.Msun).value
+    results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
+    results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
+    print(Tex, MH2, MH2.to(u.Msun))
 
 results_mass.to_csv('M_H2_Tex_fixed.csv')

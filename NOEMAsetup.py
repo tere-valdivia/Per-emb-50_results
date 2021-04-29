@@ -20,7 +20,7 @@ H2CO_303_202 = 'H2CO/CDconfig/Per-emb-50_CD_l021l060_uvsub_H2CO_multi'
 H2CO_303_202_s = 'H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small'
 H2CO_303_202_s_pb = 'H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small'
 SO_55_44 = 'SO_55_44/CDconfig/Per-emb-50_CD_l009l048_uvsub_SO_multi'
-SO_55_44_s = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+SO_55_44_s = 'SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
 SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
 C18O_2_1 = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 C18O_2_1_s = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
@@ -157,51 +157,3 @@ def per_emb_50_get_vc_r(velfield_file, region_file):
     v_los = Vc_cutout[gd]*u.km/u.s
     r_proj = rad_cutout[gd]
     return r_proj, v_los
-
-# TODO: check units
-def J_nu(nu, T):
-    """
-    Calculates the Rayleigh-Jeans equivalent temperature J_nu, in particular to
-    aid in the calculation of the column density of C18O (but is used for any
-    molecule)
-
-    Note that the input parameters  must have their corresponding units
-
-    Returns the equivalent temperature in u.K
-    """
-    over = h * nu / k_B
-    under = np.exp(over/T) - 1
-    return (over/under).decompose()
-
-def Qrot(B0, Tex):
-    """
-    Calculates the partition function of a rigid rotor, diatomic molecule, with
-    the 1st order Taylor approximation
-
-    The partition function is adimensional,  so the function returns a float
-    """
-    taylorapp = k_B * Tex / (h * B0) + 1./3.
-    return taylorapp.value
-
-
-def N_C18O_21(TdV, B0, Tex, f=1):
-    '''
-    Returns the column density of C18O based on the J=2-1 transition
-
-    To check if the constant is ok, I calculated the constant for J=1-0,
-    obtained the same as for the example in Mangum + Shirrley 2015 and applied
-    the same method with the different values of Eu, J and nu
-
-    This is equivalent to combining equations 10 and 12 from Nishimura et al
-    2015 using the optically thin limit (checked). The constant of equation 10
-    is the same constant we get here divided by k_b/hB0 and multiplied by
-    2J+1 = 5
-
-    TdVin must be in K km/s
-    '''
-    nu = 219560.3541 * u.MHz
-    constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
-    Eu = 15.81 * u.K
-    NC18O = constant * Qrot(B0, Tex)/5 * np.exp((Eu.value / Tex.value)) / \
-        (np.exp(10.54/Tex.value)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
-    return NC18O.to(u.cm**(-2))

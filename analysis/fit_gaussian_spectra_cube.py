@@ -15,7 +15,8 @@ from astropy.coordinates import SkyCoord
 # For pbcor, we need to give it the rms
 
 pbcor = False
-cubefile = '../SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+# cubefile = '../SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+cubefile = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small'
 # cubefile_nonpb = '../' + H2CO_303_202_s
 # cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
 # cubefile_nonpb = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
@@ -27,6 +28,13 @@ fitregionfile = 'H2CO_fitregion.reg'
 # starting_point = (70, 82) #H2CO
 starting_point = (53,116)
 # starting_point = (126,135) #C18O
+cube1 = SpectralCube.read(cubefile+'.fits').with_spectral_unit(u.km/u.s)
+header1 = cube1.header
+restfreq = header1['restfreq'] * u.Hz
+beamarea = 1.133 * header1['bmaj'] * u.deg * header1['bmin'] * u.deg
+cube1 = cube1.to(u.K) #, u.brightness_temperature(restfreq, beam_area=beamarea))
+regionlist = regions.read_ds9(fitregionfile)
+subcube = cube1.subcube_from_regions(regionlist)
 
 if not os.path.exists(cubefile+'_fitcube.fits'):
     # The cube to fit must be smaller than the small cube we set earlier
@@ -35,7 +43,7 @@ if not os.path.exists(cubefile+'_fitcube.fits'):
     header1 = cube1.header
     restfreq = header1['restfreq'] * u.Hz
     beamarea = 1.133 * header1['bmaj'] * u.deg * header1['bmin'] * u.deg
-    cube1 = cube1.to(u.K, u.brightness_temperature(restfreq, beam_area=beamarea))
+    cube1 = cube1.to(u.K) #, u.brightness_temperature(restfreq, beam_area=beamarea))
     regionlist = regions.read_ds9(fitregionfile)
     subcube = cube1.subcube_from_regions(regionlist)
     subcube.hdu.writeto(cubefile+'_fitcube.fits')
@@ -66,7 +74,7 @@ if pbcor:
 else:
     rms = np.nanstd(np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))
     rmsmap = np.ones(np.shape(spc.cube)) * rms
-
+print(rms)
 momentsfile = cubefile+'_fitcube_moments.fits'
 if os.path.exists(momentsfile):
     spc.momentcube = fits.getdata(momentsfile)
@@ -166,18 +174,18 @@ for key_i in key_list:
 commonhead['NAXIS'] = 2
 commonhead['WCSAXES'] = 2
 
-hdutmax = fits.PrimaryHDU(data=tmax, header=commonhead)
-hdutmax.writeto(cubefile + '_1G_tmax.fits', overwrite=True)
-headervelocities = commonhead.copy()
-headervelocities['BUNIT'] = 'km/s'
-hduvlsr = fits.PrimaryHDU(data=vlsr, header=headervelocities)
-hduvlsr.writeto(cubefile + '_1G_Vc.fits', overwrite=True)
-hdusigmav = fits.PrimaryHDU(data=sigmav, header=headervelocities)
-hdusigmav.writeto(cubefile + '_1G_sigma_v.fits', overwrite=True)
-
-modelhdu = fits.PrimaryHDU(data=fittedmodel, header=header)
-modelhdu.writeto(cubefile + '_fitcube_fitted.fits', overwrite=True)
-spc.mapplot()
-spc.show_fit_param(2, cmap='inferno')
-
-plt.show()
+# hdutmax = fits.PrimaryHDU(data=tmax, header=commonhead)
+# hdutmax.writeto(cubefile + '_1G_tmax.fits', overwrite=True)
+# headervelocities = commonhead.copy()
+# headervelocities['BUNIT'] = 'km/s'
+# hduvlsr = fits.PrimaryHDU(data=vlsr, header=headervelocities)
+# hduvlsr.writeto(cubefile + '_1G_Vc.fits', overwrite=True)
+# hdusigmav = fits.PrimaryHDU(data=sigmav, header=headervelocities)
+# hdusigmav.writeto(cubefile + '_1G_sigma_v.fits', overwrite=True)
+#
+# modelhdu = fits.PrimaryHDU(data=fittedmodel, header=header)
+# modelhdu.writeto(cubefile + '_fitcube_fitted.fits', overwrite=True)
+# spc.mapplot()
+# spc.show_fit_param(2, cmap='inferno')
+#
+# plt.show()

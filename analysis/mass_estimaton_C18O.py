@@ -10,7 +10,7 @@ from NOEMAsetup import *
 import os
 import regions
 import matplotlib.pyplot as plt
-
+# TODO: Now use the region with the "kink" to calculate the mass as well
 '''
 Important functions
 '''
@@ -64,12 +64,14 @@ def N_C18O_21(TdV, B0, Tex, f=1):
 '''
 Inputs
 '''
-filenameH2CO = '../' + H2CO_303_202_s
-filenameC18O = '../' + C18O_2_1
-snratio = 3
-rms = 13.94 * u.mJy/u.beam
-NC18Ofilename = 'N_C18O_constantTex_{0}K.fits'
-NC18Oplotname = 'N_C18O_constantTex_{0}K.pdf'
+# filenameH2CO = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_fitted'
+filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
+tablefile = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
+# snratio = 1
+# rms = 13.94 * u.mJy/u.beam
+# rms = 0.347 * u.K
+NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
+NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.pdf'
 X_C18O = 5.9e6 # Look for Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -86,62 +88,69 @@ End inputs
 
 # reproject the C18O to the H2CO wcs
 
-if not os.path.exists(filenameC18O+'_reprojectH2COs.fits'):
-    cubeH2CO = SpectralCube.read(filenameH2CO+'.fits').with_spectral_unit(u.km/u.s).spectral_slab(velinit,velend)
-    cubeC18O = SpectralCube.read(filenameC18O+'.fits').with_spectral_unit(u.km/u.s)
-    spectral_grid_objective = cubeH2CO.spectral_axis
-    # spectral reprojection
-    cubeC18O = cubeC18O.spectral_interpolate(spectral_grid_objective)
-    # spatial reprojection
-    cubeC18O = cubeC18O.reproject(cubeH2CO.header) #beam is still there
-    cubeC18O.write(filenameC18O+'_reprojectH2COs.fits')
-else:
-    cubeC18O = SpectralCube.read(filenameC18O+'_reprojectH2COs.fits').with_spectral_unit(u.km/u.s)
+# if not os.path.exists(filenameC18O+'_reprojectH2COs_2.fits'):
+#     cubeH2CO = SpectralCube.read(filenameH2CO+'.fits').with_spectral_unit(u.km/u.s).spectral_slab(velinit,velend)
+#     cubeC18O = SpectralCube.read(filenameC18O+'.fits').with_spectral_unit(u.km/u.s)
+#     spectral_grid_objective = cubeH2CO.spectral_axis
+#     # spectral reprojection
+#     cubeC18O = cubeC18O.spectral_interpolate(spectral_grid_objective)
+#     # spatial reprojection
+#     cubeC18O = cubeC18O.reproject(cubeH2CO.header) #beam is still there
+#     cubeC18O.write(filenameC18O+'_reprojectH2COs_2.fits')
+# else:
+#     cubeC18O = SpectralCube.read(filenameC18O+'_reprojectH2COs_2.fits').with_spectral_unit(u.km/u.s)
+#
+# # Now leave out all that is not streamer
+# if not os.path.exists(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_2.fits'):
+#     if not 'cubeH2CO' in globals():
+#         #  Just load if not loaded before
+#         cubeH2CO = SpectralCube.read(filenameH2CO+'.fits').with_spectral_unit(u.km/u.s).spectral_slab(velinit,velend)
+#     # mask the cube where there is emission
+#     masked_cube = cubeC18O.with_mask(cubeH2CO > snratio* rms)
+#     region_streamer = '../data/region_streamer_l.reg'
+#     regio = regions.read_ds9(region_streamer)
+#     streamer_cube = masked_cube.subcube_from_regions(regio)
+#     streamer_cube.write(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_2.fits')
+#
+# streamer_cube = SpectralCube.read(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_2.fits')
+# # We call it new because it is the header of the masked and cut C18O
+# # newheaderC18O = cubeC18O.header
+# newheaderC18O = streamer_cube.header
+# deltara = (newheaderC18O['CDELT1'] * u.deg).to(u.rad).value
+# deltadec = (newheaderC18O['CDELT2'] * u.deg).to(u.rad).value
+#
+# # Change cube to K
+# k_streamer_cube = streamer_cube.to(u.K)
+# # k_streamer_cube.write(filenameC18O+'_testK.fits')
+#
+# # do a moment 0
+# # As it is the moment 0 of C18O where H2CO is positive,C18O can be negative
+# mom0 = k_streamer_cube.moment(order=0)
+# NC18Oheader = mom0.header
+# mom0 = mom0.value * mom0.unit #Transform from type Projection to type Quantity
+# mom0[np.where(mom0.value < 0.0)] = np.nan * u.K * u.km/u.s
+# wcsmom = WCS(newheaderC18O).celestial
+# # for now,lets assume a constant Tex
+#
+# NC18Oheader['bmaj'] = newheaderC18O['bmaj']
+# NC18Oheader['bmin'] = newheaderC18O['bmin']
+# NC18Oheader['bpa'] = newheaderC18O['bpa']
+#
+# #save the moment 0
+# if not os.path.exists(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_mom0_2.fits'):
+#     NC18Omomheader = NC18Oheader.copy()
+#     NC18Omomheader['bunit'] = 'K km s-1'
+#     newmom0hdu = fits.PrimaryHDU(data=mom0.value, header=NC18Omomheader)
+#     newmom0hdu.writeto(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_mom0_2.fits')
 
-# Now leave out all that is not streamer
-if not os.path.exists(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma.fits'):
-    if not 'cubeH2CO' in globals():
-        #  Just load if not loaded before
-        cubeH2CO = SpectralCube.read(filenameH2CO+'.fits').with_spectral_unit(u.km/u.s).spectral_slab(velinit,velend)
-    # mask the cube where there is emission
-    masked_cube = cubeC18O.with_mask(cubeH2CO > snratio* rms)
-    region_streamer = '../data/region_streamer_l.reg'
-    regio = regions.read_ds9(region_streamer)
-    streamer_cube = masked_cube.subcube_from_regions(regio)
-    streamer_cube.write(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma.fits')
-else:
-    streamer_cube = SpectralCube.read(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma.fits')
 
-# We call it new because it is the header of the masked and cut C18O
-newheaderC18O = cubeC18O.header
-deltara = (newheaderC18O['CDELT1'] * u.deg).to(u.rad).value
-deltadec = (newheaderC18O['CDELT2'] * u.deg).to(u.rad).value
-
-# Change cube to K
-k_streamer_cube = streamer_cube.to(u.K)
-
-# do a moment 0
-# As it is the moment 0 of C18O where H2CO is positive,C18O can be negative
-mom0 = k_streamer_cube.moment(order=0)
-NC18Oheader = mom0.header
-mom0 = mom0.value * mom0.unit #Transform from type Projection to type Quantity
-mom0[np.where(mom0.value < 0.0)] = np.nan * u.K * u.km/u.s
-wcsmom = WCS(newheaderC18O).celestial
-# for now,lets assume a constant Tex
-
-
-NC18Oheader['bmaj'] = newheaderC18O['bmaj']
-NC18Oheader['bmin'] = newheaderC18O['bmin']
-NC18Oheader['bpa'] = newheaderC18O['bpa']
-
-#save the moment 0
-if not os.path.exists(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_mom0.fits'):
-    NC18Omomheader = NC18Oheader.copy()
-    NC18Omomheader['bunit'] = 'K km s-1'
-    newmom0hdu = fits.PrimaryHDU(data=mom0.value, header=NC18Omomheader)
-    newmom0hdu.writeto(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_mom0.fits')
-
+NC18Oheader = fits.getheader(filenameC18O+'.fits')
+deltara = (NC18Oheader['CDELT1'] * u.deg).to(u.rad).value
+deltadec = (NC18Oheader['CDELT2'] * u.deg).to(u.rad).value
+wcsmom = WCS(NC18Oheader)
+mom0 = fits.getdata(filenameC18O+'.fits') *u.K * u.km/u.s
 NC18Oheader['bunit'] = 'cm-2'
+
 results_mass = pd.DataFrame(index=Texlist.value)
 
 for Tex in Texlist:
@@ -177,4 +186,4 @@ for Tex in Texlist:
     results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
     print(Tex, MH2, MH2.to(u.Msun))
 
-results_mass.to_csv('M_H2_Tex_fixed.csv')
+results_mass.to_csv(tablefile)

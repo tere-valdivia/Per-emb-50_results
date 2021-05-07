@@ -10,7 +10,8 @@ from NOEMAsetup import *
 import os
 import regions
 import matplotlib.pyplot as plt
-# TODO: Now use the region with the "kink" to calculate the mass as well
+from astropy.constants import G
+# TODO: Add error propagation 
 '''
 Important functions
 '''
@@ -60,18 +61,19 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     NC18O = constant * Qrot(B0, Tex)/5 * np.exp(Eu / Tex) / \
         (np.exp(10.54*u.K/Tex)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
     return NC18O.to(u.cm**(-2))
-
+constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
+constant.decompose().to(u.s/u.km/u.cm**2)
 '''
 Inputs
 '''
 # filenameH2CO = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_fitted'
-filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
-tablefile = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
+filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
+tablefile = 'M_H2_Tex_fixed_mom0_pbcor.csv'
 # snratio = 1
 # rms = 13.94 * u.mJy/u.beam
 # rms = 0.347 * u.K
-NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
-NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.pdf'
+NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
+NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 X_C18O = 5.9e6 # Look for Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -151,39 +153,52 @@ wcsmom = WCS(NC18Oheader)
 mom0 = fits.getdata(filenameC18O+'.fits') *u.K * u.km/u.s
 NC18Oheader['bunit'] = 'cm-2'
 
-results_mass = pd.DataFrame(index=Texlist.value)
+if os.path.exists(tablefile):
+    results_mass = pd.read_csv(tablefile)
 
-for Tex in Texlist:
-    # Do a N(C18O) map
-    NC18O = N_C18O_21(mom0, B0, Tex) # the mom0 must have K km/s units
-    #We save the column density obtained in a fits file
-    if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(Tex.value)):
-        newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-        newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(Tex.value))
-    # We plot the column density
-    fig = plt.figure(figsize=(4,4))
-    ax = fig.add_subplot(111, projection=wcsmom)
-    im = ax.imshow(NC18O.value)
-    fig.colorbar(im,ax=ax,label=r'N(C$^{18}$O) (cm$^{-2}$)')
-    ax.set_xlabel('RA (J2000)')
-    ax.set_ylabel('DEC (J2000)')
-    if not os.path.exists('column_dens_maps/'+NC18Oplotname.format(Tex.value)):
-        fig.savefig('column_dens_maps/'+NC18Oplotname.format(Tex.value))
+else:
+    results_mass = pd.DataFrame(index=Texlist.value)
 
-    # Calculate statistics for future reference
-    results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
-    results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
-    results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
-    results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
-    results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
-    # Now, we calculate the column density of H2
-    results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
-    NH2 = NC18O * X_C18O
-    NH2tot = np.nansum(NH2)
-    results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
-    MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
-    results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
-    results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
-    print(Tex, MH2, MH2.to(u.Msun))
+    for Tex in Texlist:
+        # Do a N(C18O) map
+        NC18O = N_C18O_21(mom0, B0, Tex) # the mom0 must have K km/s units
+        #We save the column density obtained in a fits file
+        if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(Tex.value)):
+            newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
+            newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(Tex.value))
+        # We plot the column density
+        fig = plt.figure(figsize=(4,4))
+        ax = fig.add_subplot(111, projection=wcsmom)
+        im = ax.imshow(NC18O.value)
+        fig.colorbar(im,ax=ax,label=r'N(C$^{18}$O) (cm$^{-2}$)')
+        ax.set_xlabel('RA (J2000)')
+        ax.set_ylabel('DEC (J2000)')
+        if not os.path.exists('column_dens_maps/'+NC18Oplotname.format(Tex.value)):
+            fig.savefig('column_dens_maps/'+NC18Oplotname.format(Tex.value))
 
-results_mass.to_csv(tablefile)
+        # Calculate statistics for future reference
+        results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
+        results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
+        results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
+        results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
+        results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
+        # Now, we calculate the column density of H2
+        results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
+        NH2 = NC18O * X_C18O
+        NH2tot = np.nansum(NH2)
+        results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
+        MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
+        results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
+        results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
+        print(Tex, MH2, MH2.to(u.Msun))
+
+    results_mass.to_csv(tablefile)
+
+M_s = 1.71*u.Msun
+M_env = np.array([0.18,0.39])*u.Msun
+M_disk = 0.58*u.Msun
+Mstar = (M_s+M_env+M_disk)
+t_ff = np.sqrt((3300*u.AU)**3/(G * Mstar)).decompose().to(u.yr)
+
+M_acc = results_mass['M (M_sun)'].values * u.Msun
+M_dot = [M_acc / t_ff[0], M_acc / t_ff[1]]

@@ -32,8 +32,11 @@ def AIC(yPred, data, err, k):
     # both models
     return aic
 
+def probaic(aicmin, aiclist):
+    return np.exp((aicmin-aiclist)/2)
 
-def filter(spc, rms, rmslevel, negative=True, errorfrac=0.5, epsilon=1.e-5):
+
+def filter3G(spc, errorfrac=0.5, epsilon=1.e-5):
     """
     Replace the pixels in the fitted cube with np.nan where the fit is not
     good enough according to our criteria.
@@ -42,7 +45,59 @@ def filter(spc, rms, rmslevel, negative=True, errorfrac=0.5, epsilon=1.e-5):
     - The error is not zero
     - The value for each peak must not be negative (in this case we know the
     moment 1 must be positive, so we specify negative=True, can be changed)
+    - If one pixel in a spectra is np.nan, all the spectra must be nan (sanity
+    check)
+    - The error fraction is lower than errorfrac
+    Args:
+        variable (type): description
 
+    Returns:
+        type: description
+
+    Raises:
+        Exception: description
+
+    """
+    # error different than 0
+    zeromask = np.where(np.abs(spc.errcube[0]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[1]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[2]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[3]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[4]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[5]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[6]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[7]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[8]) < epsilon, 1, 0)
+    spc.parcube[np.where(np.repeat([zeromask], 9, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([zeromask], 9, axis=0))] = np.nan
+    errormask = np.where(np.abs(spc.errcube[0]/spc.parcube[0]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[2]/spc.parcube[2]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[3]/spc.parcube[3]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[4]/spc.parcube[4]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[5]/spc.parcube[5]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[6]/spc.parcube[6]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[7]/spc.parcube[7]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[8]/spc.parcube[8]) > errorfrac, 1, 0)
+    spc.parcube[np.where(np.repeat([errormask], 9, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([errormask], 9, axis=0))] = np.nan
+    nanmask = np.sum(np.where(np.isnan(np.concatenate([spc.parcube, spc.errcube])), 1, 0), axis=0)
+    spc.parcube[np.where(np.repeat([nanmask], 9, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([nanmask], 9, axis=0))] = np.nan
+    return spc
+
+def filter2G(spc, errorfrac=0.5, epsilon=1.e-5):
+    """
+    Replace the pixels in the fitted cube with np.nan where the fit is not
+    good enough according to our criteria.
+
+    The criteria that a pixel must have are:
+    - The error is not zero
+    - The value for each peak must not be negative (in this case we know the
+    moment 1 must be positive, so we specify negative=True, can be changed)
+    - If one pixel in a spectra is np.nan, all the spectra must be nan (sanity
+    check)
+    - The error fraction is lower than errorfrac
     Args:
         variable (type): description
 
@@ -62,17 +117,52 @@ def filter(spc, rms, rmslevel, negative=True, errorfrac=0.5, epsilon=1.e-5):
         np.where(np.abs(spc.errcube[5]) < epsilon, 1, 0)
     spc.parcube[np.where(np.repeat([zeromask], 6, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([zeromask], 6, axis=0))] = np.nan
-    # no negative values
-    if negative:
-        negativemask = np.where(spc.parcube[0] < 0, 1, 0) + \
-            np.where(spc.parcube[1] < 0, 1, 0) + \
-            np.where(spc.parcube[2] < 0, 1, 0) + \
-            np.where(spc.parcube[3] < 0, 1, 0) + \
-            np.where(spc.parcube[4] < 0, 1, 0) + \
-            np.where(spc.parcube[5] < 0, 1, 0)
-        spc.parcube[np.where(np.repeat([negativemask], 6, axis=0))] = np.nan
-        spc.errcube[np.where(np.repeat([negativemask], 6, axis=0))] = np.nan
+    errormask = np.where(np.abs(spc.errcube[0]/spc.parcube[0]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[2]/spc.parcube[2]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[3]/spc.parcube[3]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[4]/spc.parcube[4]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[5]/spc.parcube[5]) > errorfrac, 1, 0)
+    spc.parcube[np.where(np.repeat([errormask], 6, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([errormask], 6, axis=0))] = np.nan
+    nanmask = np.sum(np.where(np.isnan(np.concatenate([spc.parcube, spc.errcube])), 1, 0), axis=0)
+    spc.parcube[np.where(np.repeat([nanmask], 6, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([nanmask], 6, axis=0))] = np.nan
+    return spc
 
+def filter1G(spc, errorfrac=0.5, epsilon=1.e-5):
+    """
+    Replace the pixels in the fitted cube with np.nan where the fit is not
+    good enough according to our criteria.
+
+    The criteria that a pixel must have are:
+    - The error is not zero
+    - The error fraction is lower than errorfrac
+    - If one pixel in a spectra is np.nan, all the spectra must be nan (sanity
+    check)
+
+    Args:
+        variable (type): description
+
+    Returns:
+        type:
+
+    """
+    zeromask = np.where(np.abs(spc.errcube[0]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[1]) < epsilon, 1, 0) + \
+        np.where(np.abs(spc.errcube[2]) < epsilon, 1, 0)
+    spc.parcube[np.where(np.repeat([zeromask], 3, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([zeromask], 3, axis=0))] = np.nan
+    errormask = np.where(np.abs(spc.errcube[0]/spc.parcube[0]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)\
+        + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)
+    spc.parcube[np.where(np.repeat([errormask], 3, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([errormask], 3, axis=0))] = np.nan
+    # Force if one pixel in a channel is nan, all the same pixels
+    # in all  channels must be nan
+    nanmask = np.sum(np.where(np.isnan(np.concatenate([spc.parcube, spc.errcube])), 1, 0), axis=0)
+    spc.parcube[np.where(np.repeat([nanmask], 3, axis=0))] = np.nan
+    spc.errcube[np.where(np.repeat([nanmask], 3, axis=0))] = np.nan
     return spc
 
 
@@ -98,6 +188,8 @@ velinit = -1.0 * u.km/u.s
 velend = 13.0 * u.km/u.s
 starting_point = (37, 24)
 prob_tolerance = 0.05
+snratio = 4 # minimal signal to noise ratio for the fitted amplitude
+signal_cut = 4 # minimal signal to noise the data must have to fit
 ########
 # End Inputs
 ########
@@ -130,6 +222,7 @@ wcscel = WCS(header).celestial
 chanlims = [wcsspec.world_to_pixel(velinit).tolist(), wcsspec.world_to_pixel(velend).tolist()]
 rms = np.nanstd(np.vstack([cube[:int(np.min(chanlims))], cube[int(np.max(chanlims)):]]))
 rmsmap = np.ones(np.shape(spc.cube)) * rms
+spc.errorcube = rmsmap
 
 momentsfile = cubefile+'_fitcube2g_moments.fits'
 cube_mom = cube.spectral_slab(velinit,velend)
@@ -142,85 +235,153 @@ else:
     moments = fits.PrimaryHDU(data=spc.momentcube)
     moments.writeto(momentsfile)
 spc2 = spc.copy()
+spc3 = spc.copy()
 # We use the moments to do initial guesses
 # Use the skew to determine the direction of the second gaussian
+
 
 """
 1 gaussian
 """
 initguesses = spc.momentcube
-
 fitfile1 = cubefile + '_1G_fitparams.fits'
 if not os.path.exists(fitfile1):
-    spc.fiteach(fittype='gaussian',
-                guesses=initguesses,
-                use_neighbor_as_guess=True,
-                verbose=1,
-                errmap=rmsmap,
-                signal_cut=4,
-                blank_value=np.nan,
-                start_from_point=(starting_point))
+    try:
+        spc.fiteach(fittype='gaussian',
+                    guesses=initguesses,
+                    use_neighbor_as_guess=True,
+                    verbose=1,
+                    signal_cut=4,
+                    blank_value=np.nan,
+                    start_from_point=(starting_point))
+    except ValueError:
+        print('There are non-finite parameters in the fit')
+    except AssertionError:
+        print('There are non-finite parameters in the fit')
     spc.write_fit(fitfile1)
 else:
     spc.load_model_fit(fitfile1, 3, fittype='gaussian')
-#     fittedmodel = spc.get_modelcube()
-#     spc.write_fit(fitfile, overwrite=True)
-# spc = filter(spc, rms, 4)
-# fitfile1masked = cubefile + '_1G_fitparams_masked.fits'
-# if not os.path.exists(fitfile1masked):
-#     spc.write_fit(fitfile1masked)
-fittedmodel1 = spc.get_modelcube()
+'''
+The pixels we sample are:
+
+25,34 : 3:29:07.7919, +31:21:57.586 (northern rotation)
+29, 25 : 3:29:07.7441, +31:21:56.211 (southern rotation)
+37, 23 : 3:29:07.6487, +31:21:55.906 (northern tip of the streamer)
+41, 13 : 3:29:07.6010, +31:21:54.378 (southern tip of the streamer)
+40, 18 : 3:29:07.6097, +31:21:55.042 (border to where the stream becomes 1G)
+30, 12 : 3:29:07.7322, +31:21:54.225 (just below the rotation)
+33, 41 : 3:29:07.6964, +31:21:58.656 (northern inversion)
+'''
+plot_x = [25,23,29,37,41,30,33,40]
+plot_y = [34,36,25,23,13,12,41,18]
+for x, y in zip(plot_x,plot_y):
+    sp = spc.get_spectrum(x,y)
+    sp.plotter()
+    try:
+        sp.specfit.plot_fit()
+    except ValueError:
+        print("{0}, {1} has no fit for 2G".format(x, y))
+    sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.png')
+    plt.clf()
+
 
 """
 2 gaussians
 """
-mom11 = spc.momentcube[1] - 0.5
-mom12 = spc.momentcube[1] + 0.5
+mom11 = spc.momentcube[1] - 0.2
+mom12 = spc.momentcube[1] + 0.2
 mom21 = mom22 = np.sqrt(spc.momentcube[2])/2
-
 mom01 = mom02 = np.where(spc.momentcube[0]>0, spc.momentcube[0],0)
-# mom11 = spc.momentcube[1] - 0.2
-# mom12 = spc.momentcube[1] + 0.2
 initguesses2 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22]])
+if not os.path.exists(cubefile + '_2G_initguesses.fits'):
+    initguesses2file = fits.PrimaryHDU(data=initguesses2)
+    initguesses2file.writeto(cubefile + '_2G_initguesses.fits')
 
-# initguesses2file = fits.PrimaryHDU(data=initguesses2)
-# initguesses2file.writeto(cubefile + '_2G_initguesses.fits')
+
 fitfile2 = cubefile + '_2G_fitparams.fits'
 if os.path.exists(fitfile2):
     spc2.load_model_fit(fitfile2, 3, npeaks=2,fittype='gaussian')
 else:
-    # TODO: force positive amplitude. This must be done spectra by spectra
-    spc2.fiteach(fittype='gaussian',
-                guesses=initguesses2,
-                negamp=False,
-                # parlimited=[(True,False), (False,False), (False,False),(True,False), (False,False), (False,False)],
-                # parlimits=[(0,np.inf),(0,np.inf),(0,np.inf),(0,np.inf),(0,np.inf),(0,np.inf)],
-                verbose=3,
-                errmap=rmsmap,
-                signal_cut=4,
-                blank_value=np.nan,
-                start_from_point=(starting_point))
+    try:
+        spc2.fiteach(fittype='gaussian',
+                    guesses=initguesses2,
+                    negamp=False,
+                    parlimited=[(True,False), (False,False), (Fal,True),(True,False), (False,False), (True,True)],
+                    parlimits=[(rms*snratio,np.inf),(0,np.inf),(0.05,2.),(rms*snratio,np.inf),(0,np.inf),(0.1,2.)],
+                    verbose=3,
+                    signal_cut=4,
+                    blank_value=np.nan,
+                    start_from_point=(starting_point))
+    except AssertionError:
+        print('There are non-finite parameters in the fit')
+    # as there are some nan parameters, which indicate failed fits, this will
+    # throw an error
     spc2.write_fit(fitfile2)
+for x, y in zip(plot_x,plot_y):
+    sp2 = spc2.get_spectrum(x,y)
+    sp2.plotter()
+    try:
+        sp2.specfit.plot_fit()
+    except ValueError:
+        print("{0}, {1} has no fit for 2G".format(x, y))
+    sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.png')
+    plt.clf()
 
-# spc2 = filter(spc2, rms, 4)
-# fitfile2masked = cubefile + '_2G_fitparams_masked.fits'
-# if not os.path.exists(fitfile2masked):
-#     spc2.write_fit(fitfile2masked)
+"""
+3 gaussians (we allow the third gaussian component to be broader, but not
+larger than 5 kms, as a first test)
+"""
+mom03 = mom01/2.0
+mom13 = mom11 - 0.2
+mom23 = mom22 * 4
+
+initguesses3 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22], [mom03, mom13, mom23]])
+if not os.path.exists(cubefile + '_3G_initguesses.fits'):
+    initguesses3file = fits.PrimaryHDU(data=initguesses3)
+    initguesses3file.writeto(cubefile + '_3G_initguesses.fits')
+
+fitfile3 = cubefile + '_3G_fitparams.fits'
+if os.path.exists(fitfile3):
+    spc3.load_model_fit(fitfile3, 3, npeaks=3,fittype='gaussian')
+else:
+    try:
+        spc3.fiteach(fittype='gaussian',
+                    guesses=initguesses3,
+                    negamp=False,
+                    parlimited=[(True,False), (False,False), (True,True),(True,False), (False,False), (True,True), (True,False), (False,False), (True,True)],
+                    parlimits=[(rms*snratio,np.inf),(0,np.inf),(0.1,2.),(rms*snratio,np.inf),(0,np.inf),(0.1,2.), (rms*snratio,np.inf),(0,np.inf),(0.1,5.)],
+                    verbose=3,
+                    signal_cut=4,
+                    blank_value=np.nan,
+                    start_from_point=(starting_point))
+    except AssertionError:
+        print('There are non-finite parameters in the fit')
+    # as there are some nan parameters, which indicate failed fits, this will
+    # throw an error
+    spc3.write_fit(fitfile3)
+for x, y in zip(plot_x,plot_y):
+    sp3 = spc3.get_spectrum(x,y)
+    sp3.plotter()
+    try:
+        sp3.specfit.plot_fit()
+    except ValueError:
+        print("{0}, {1} has no fit for 3G".format(x, y))
+    sp3.plotter.savefig(cubefile+ '_3G_'+str(x)+'_'+str(y)+'.png')
+    plt.clf()
+
+# Apply the filters to the parameter cubes
+
+spc = filter1G(spc)
+spc2 = filter2G(spc2)
+spc3 = filter3G(spc3)
+fittedmodel1 = spc.get_modelcube()
 fittedmodel2 = spc2.get_modelcube()
-
-# for now, we ignore the error in the parameters
-# and also we do not filter with all criteria
-
-spc.parcube[:,25,25]
-spc2.parcube[:,20,31]
-sp = spc2.get_spectrum(25,25)
-sp.specfit(fittype='gaussian')
-sp.specfit.get_components()
-spc2.plot_spectrum(31,20, plot_fit=True)
-spc2.plot_spectrum(25,25, plot_fit=True)
+fittedmodel3 = spc3.get_modelcube()
+# The AIC criterion is applied in the filtered cubes
 
 aic1map = np.zeros(np.shape(mom12)) *np.nan
 aic2map = np.zeros(np.shape(mom12))*np.nan
+aic3map = np.zeros(np.shape(mom12))*np.nan
 totalpix = n_x*n_y
 flag_prob = np.zeros(np.shape(mom12))
 for x in range(n_x):
@@ -229,40 +390,78 @@ for x in range(n_x):
         spectrum = cube[:, y, x]
         ypred1g = fittedmodel1[:, y, x]
         ypred2g = fittedmodel2[:, y, x]
+        ypred3g = fittedmodel3[:, y, x]
         unit = spectrum.unit
         spectrum = spectrum.value
         params_1G = spc.parcube[:, y, x]
         params_2G = spc2.parcube[:, y, x]
+        params_3G = spc3.parcube[:, y, x]
         # if the fit is nan in any of the pixels, ignore
         # if np.all(np.isnan(params_1G)) or np.all(np.isnan(params_2G)):
         #     # If one of the fits failed, the comparison does not make sense
         #     continue
-        print("Selecting best fit for pixel ({0},{1}) out of {2}".format(x,y,totalpix))
+
         # evaluate the AIC for each model in the pixel
         aic1g = AIC(ypred1g, spectrum, rms, len(params_1G))
         aic1map[y,x] = aic1g
         aic2g = AIC(ypred2g, spectrum, rms, len(params_2G))
         aic2map[y,x] = aic2g
+        aic3g = AIC(ypred3g, spectrum, rms, len(params_3G))
+        aic3map[y,x] = aic3g
         # choose the minimum AIC
-        if aic2g < aic1g: #that 2G are best
-            # for the model that is not the correct one, set the fit to NaN
-            spc.parcube[:,y,x] = [np.nan,np.nan,np.nan]
-            spc.errcube[:,y,x] = [np.nan,np.nan,np.nan]
-            # we evaluate the probability that the other model is as good for
-            # minimizing information loss as the best one
-            prob = np.exp((aic2g - aic1g)/2.)
-            if prob > prob_tolerance:
-                flag_prob[y,x] = 1
-        else:
+        aiclist = [aic1g, aic2g, aic3g]
+        if np.all(np.isnan(aiclist)):
+            continue
+        print("Selecting best fit for pixel ({0},{1}) out of {2}".format(x,y,totalpix))
+        minaicindex = np.nanargmin(aiclist)
+        minaic = aiclist[minaicindex]
+
+        if minaicindex + 1 == 1:
+            # 1 gaussian fit is best
             spc2.parcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
             spc2.errcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
-            # prob = np.exp((aic1g - aic2g)/2.)
-            # if prob > prob_tolerance:
-            #     flag_prob[y,x] = 1
+            spc3.parcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+            spc3.errcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
 
+        elif minaicindex + 1 == 2:
+            # 2 gaussian fit is best
+            spc.parcube[:,y,x] = [np.nan,np.nan,np.nan]
+            spc.errcube[:,y,x] = [np.nan,np.nan,np.nan]
+
+        else:
+            # 3 gaussian fit is best
+            spc.parcube[:,y,x] = [np.nan,np.nan,np.nan]
+            spc.errcube[:,y,x] = [np.nan,np.nan,np.nan]
+            spc2.parcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+            spc2.errcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        aiclist.pop(minaicindex)
+        prob = probaic(minaic, aiclist)
+        if np.amax(prob) > prob_tolerance:
+            flag_prob[y,x] = 1
+
+        #
+        # if aic2g < aic1g: #that 2G are best
+        #     # for the model that is not the correct one, set the fit to NaN
+        #     spc.parcube[:,y,x] = [np.nan,np.nan,np.nan]
+        #     spc.errcube[:,y,x] = [np.nan,np.nan,np.nan]
+        #     spc3.parcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        #     spc3.errcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        #     # we evaluate the probability that the other model is as good for
+        #     # minimizing information loss as the best one
+        #     prob = np.exp((aic2g - aic1g)/2.)
+        #     if prob > prob_tolerance:
+        #         flag_prob[y,x] = 1
+        # else:
+        #     spc2.parcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        #     spc2.errcube[:,y,x] = [np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]
+        #     prob = np.exp((aic1g - aic2g)/2.)
+        #     if prob > prob_tolerance:
+        #         flag_prob[y,x] = 2
+
+newheadaic = wcscel.to_header()
 fitfile1aicmap = cubefile + '_1G_fitparams_aicmap.fits'
 if not os.path.exists(fitfile1aicmap):
-    hduaic = fits.PrimaryHDU(data=aic1map, header=wcscel.to_header())
+    hduaic = fits.PrimaryHDU(data=aic1map, header=newheadaic)
     hduaic.writeto(fitfile1aicmap)
 fitfile1aicres = cubefile + '_1G_fitparams_aicres.fits'
 if not os.path.exists(fitfile1aicres):
@@ -270,18 +469,22 @@ if not os.path.exists(fitfile1aicres):
 
 fitfile2aicmap = cubefile + '_2G_fitparams_aicmap.fits'
 if not os.path.exists(fitfile2aicmap):
-    hduaic = fits.PrimaryHDU(data=aic2map, header=wcscel.to_header())
+    hduaic = fits.PrimaryHDU(data=aic2map, header=newheadaic)
     hduaic.writeto(fitfile2aicmap)
 fitfile2aicres = cubefile + '_2G_fitparams_aicres.fits'
 if not os.path.exists(fitfile2aicres):
     spc2.write_fit(fitfile2aicres)
 
+fitfile3aicmap = cubefile + '_3G_fitparams_aicmap.fits'
+if not os.path.exists(fitfile3aicmap):
+    hduaic = fits.PrimaryHDU(data=aic3map, header=newheadaic)
+    hduaic.writeto(fitfile3aicmap)
+fitfile3aicres = cubefile + '_3G_fitparams_aicres.fits'
+if not os.path.exists(fitfile3aicres):
+    spc3.write_fit(fitfile3aicres)
 
-fitfileflags = cubefile + '_2G_flag.fits'
+
+fitfileflags = cubefile + '_3G_flag.fits'
 if not os.path.exists(fitfileflags):
-    flaghdu = fits.PrimaryHDU(data=flag_prob, header=wcscel.to_header())
+    flaghdu = fits.PrimaryHDU(data=flag_prob, header=newheadaic)
     flaghdu.writeto(fitfileflags)
-
-
-
-## see the spectra

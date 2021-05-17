@@ -85,8 +85,8 @@ def setup_plot_noema(fig_i, label_col='black', star_col='red'):
     fig_i.add_beam(color=label_col)
     distance = 293.
     ang_size = (2000 / distance) * u.arcsec
-    fig_i.add_scalebar(ang_size, label='2000 AU', color=label_col, corner='bottom')
-    fig_i.scalebar.set_label('2000 AU')
+    fig_i.add_scalebar(ang_size, label='2000 au', color=label_col, corner='bottom')
+    fig_i.scalebar.set_label('2000 au')
     fig_i.scalebar.set_font(family='monospace', weight=1000)
     fig_i.show_markers(ra_Per50.value, dec_Per50.value, marker='*', s=60, layer='star',
                        edgecolor=star_col, facecolor=label_col, zorder=31)

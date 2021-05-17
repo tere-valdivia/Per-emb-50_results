@@ -11,7 +11,7 @@ import os
 import regions
 import matplotlib.pyplot as plt
 from astropy.constants import G
-# TODO: Add error propagation 
+# TODO: Add error propagation
 '''
 Important functions
 '''
@@ -67,13 +67,13 @@ constant.decompose().to(u.s/u.km/u.cm**2)
 Inputs
 '''
 # filenameH2CO = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_fitted'
-filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
-tablefile = 'M_H2_Tex_fixed_mom0_pbcor.csv'
+filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
+tablefile = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
 # snratio = 1
 # rms = 13.94 * u.mJy/u.beam
 # rms = 0.347 * u.K
-NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
-NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
+NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
+NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.pdf'
 X_C18O = 5.9e6 # Look for Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -144,8 +144,6 @@ End inputs
 #     NC18Omomheader['bunit'] = 'K km s-1'
 #     newmom0hdu = fits.PrimaryHDU(data=mom0.value, header=NC18Omomheader)
 #     newmom0hdu.writeto(filenameC18O+'_H2COmasked_'+str(snratio)+'sigma_mom0_2.fits')
-
-
 NC18Oheader = fits.getheader(filenameC18O+'.fits')
 deltara = (NC18Oheader['CDELT1'] * u.deg).to(u.rad).value
 deltadec = (NC18Oheader['CDELT2'] * u.deg).to(u.rad).value
@@ -192,7 +190,7 @@ else:
         results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
         print(Tex, MH2, MH2.to(u.Msun))
 
-    results_mass.to_csv(tablefile)
+    # results_mass.to_csv(tablefile)
 
 M_s = 1.71*u.Msun
 M_env = np.array([0.18,0.39])*u.Msun

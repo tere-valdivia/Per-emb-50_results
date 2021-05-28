@@ -11,6 +11,9 @@ import os
 import regions
 import matplotlib.pyplot as plt
 from astropy.constants import G
+import aplpy
+import copy
+
 # TODO: Add error propagation
 '''
 Important functions
@@ -93,13 +96,15 @@ def N_C18O_21(TdV, B0, Tex, f=1):
 Inputs
 '''
 # filenameH2CO = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_fitted'
-filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
-tablefile = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
+filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
+tablefile = 'M_H2_Tex_fixed_mom0_pbcor.csv'
+tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
 # snratio = 1
 # rms = 13.94 * u.mJy/u.beam
 # rms = 0.347 * u.K
-NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
-NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.pdf'
+NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
+NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
+NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 X_C18O = 5.9e6 # Look for Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -179,7 +184,7 @@ NC18Oheader['bunit'] = 'cm-2'
 
 if os.path.exists(tablefile):
     results_mass = pd.read_csv(tablefile)
-
+    results_mass_kink = pd.read_csv(tablefilekink)
 else:
     results_mass = pd.DataFrame(index=Texlist.value)
 
@@ -219,7 +224,11 @@ else:
     results_mass.to_csv(tablefile)
 
 NC18Omap = fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0))
+NC18Omapkink = fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0))
+wcsmap = WCS(fits.getheader('column_dens_maps/'+NC18Ofilename.format(10.0))).celestial
+
 NH2map = NC18Omap * X_C18O * (u.cm**-2)
+NH2mapkink = NC18Omapkink * X_C18O * (u.cm**-2)
 leny, lenx = np.shape(NH2map)
 
 # This is to have an idea of the total mass
@@ -233,48 +242,90 @@ leny, lenx = np.shape(NC18Omap)
 M_acc = results_mass['M (M_sun)'].values * u.Msun
 M_dot = [M_acc / t_ff[0], M_acc / t_ff[1]]
 
+
 # Now, we separate the streamer in bins
 
 xx, yy = np.meshgrid(range(lenx), range(leny))
 
 distance_map = distance_physical(ra_Per50.value,dec_Per50.value, xx, yy, NC18Oheader)
-binsize = 100 # au
+binsize = 200 # au
 
 radiuses = np.arange(0,3100, binsize)
-binradii = np.arange(50,3050,binsize) # u.AU
+binradii = np.arange(100,3100,binsize) # u.AU
 masses = np.zeros(len(binradii)) * u.Msun
+masseskink = np.zeros(len(binradii)) * u.Msun
 times = np.zeros((len(binradii),2)) * u.yr
 m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
+m_acclistkink = np.zeros((len(binradii),2)) * u.Msun / u.yr
 
 for i in range(len(radiuses)-1):
     mask = np.where((distance_map>radiuses[i]) & (distance_map<radiuses[i+1]))
     NH2tot = np.nansum(NH2map[mask])
+    NH2totkink = np.nansum(NH2mapkink[mask])
     masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
+    masseskink[i] = M_hydrogen2(NH2totkink, mu_H2, distance, deltara, deltadec)
     times[i] = t_freefall(binradii[i]*u.AU, Mstar)
     m_acclist[i] = [masses[i] / times[i,0], masses[i] / times[i,1]]
+    m_acclistkink[i] = [masseskink[i] / times[i,0], masseskink[i] / times[i,1]]
 
 
 fig = plt.figure(figsize=(6,6))
 ax3 = fig.add_subplot(313)
-ax3.plot(binradii, m_acclist[:,0].value, 'r--')
-ax3.plot(binradii, m_acclist[:,1].value, 'r-')
+ax3.scatter(binradii, m_acclist[:,1].value, s=50, facecolors='none', edgecolors='r', label='No kink')
+ax3.scatter(binradii, m_acclistkink[:,1].value, s=50, facecolors='r', edgecolors='r',label='kink')
+ax3.set_yscale('log')
 ax3.set_xlabel('Distance from Protostar (au)')
 ax3.set_ylabel(r'$\dot{M}$ (M$_{\odot}$ yr$^{-1}$)')
+ax3.annotate('bin size = {} au'.format(binsize), (0.6,0.8), xycoords='axes fraction', size=14)
 
 ax = fig.add_subplot(311, sharex=ax3)
-ax.plot(binradii, masses.value, 'ro-')
-ax.set_ylabel(r'Mass within 100 au ($M_{\odot}$)')
+ax.scatter(binradii, masses.value*1e3, s=50, facecolors='none', edgecolors='r', label='No kink')
+ax.scatter(binradii, masseskink.value*1e3, s=50, facecolors='r', edgecolors='r',label='kink')
+ax.set_ylabel(r'Mass in bin ($\times 10^3$ M$_{\odot}$)')
+ax.legend(loc=4)
 
 ax2 = fig.add_subplot(312, sharex=ax3)
-ax2.plot(binradii, times[:,0].value, 'r--', label=r'$M_{*}=$'+str(np.round(Mstar[0],2)))
-ax2.plot(binradii, times[:,1].value, 'r-', label=r'$M_{*}=$'+str(Mstar[1]))
+ax2.scatter(binradii, times[:,1].value, s=50, facecolors='b', edgecolors='b', label=r'$M_{*}=$'+str(Mstar[1]))
 ax2.set_ylabel(r'Free-fall timescale (yr$^{-1}$)')
+ax2.set_yscale('log')
 ax2.legend()
 plt.setp(ax2.get_xticklabels(), visible=False)
 plt.setp(ax.get_xticklabels(), visible=False)
 
+fig.savefig('column_dens_maps/plot_mass_accretion_radius.pdf', dpi=300, bbox_inches='tight')
 
-fig
+ra0_pix, dec0_pix = wcsmap.all_world2pix(ra_Per50.value, dec_Per50.value, 0)
+
+def fmt(x):
+    s = f"{x:.1f}"
+    if s.endswith("0"):
+        s = f"{x:.0f}"
+    return rf"{s}" if plt.rcParams["text.usetex"] else f"{s} %"
+
+fig2 = plt.figure(figsize=(4,4))
+ax = fig2.add_subplot(111, projection=wcsmap)
+cmap = copy.copy(plt.cm.viridis)
+cmap.set_bad(np.array((1,1,1))*0.85)
+im = ax.imshow(fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0)), cmap=cmap)
+plt.colorbar(im, ax=ax, label=r'N(C$^{18}$O) (cm$^{-2}$)')
+cs = ax.contour(distance_map, levels=radiuses, colors='k', linewidths=1, linestyles='dashed')
+ax.clabel(cs, cs.levels[::3],inline=True,fmt=fmt,fontsize=15)
+
+fig2.savefig('column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_distance.pdf'.format(10.0))
+
+fig3 = plt.figure(figsize=(4,4))
+ax = fig3.add_subplot(111, projection=wcsmap)
+im = ax.imshow(fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0)), cmap=cmap)
+plt.colorbar(im, ax=ax, label=r'N(C$^{18}$O) (cm$^{-2}$)')
+cs = ax.contour(distance_map, levels=radiuses, colors='k', linewidths=1, linestyles='dashed')
+ax.clabel(cs, cs.levels[::3],inline=True,fmt=fmt,fontsize=15)
+fig3.savefig('column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_kink_distance.pdf'.format(10.0))
+
+# gc = aplpy.FITSFigure('column_dens_maps/'+NC18Ofilenamekink.format(10.0), figure=fig3)
+# gc.show_colorscale()
+# gc.add_colorbar()
+# distancehdu = fits.PrimaryHDU(data=distance_map, header=NC18Oheader)
+# gc.show_contour(distancehdu,levels=radiuses,colors='k', linewidths=0.5, linestyles='dashed')
 # plt.imshow(distance_map, origin='lower')
 
 # for x in range(lenx):

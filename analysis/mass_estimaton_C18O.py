@@ -16,6 +16,30 @@ from astropy.constants import G
 Important functions
 '''
 
+def t_freefall(r, M):
+    '''
+    r must be a AU Quantity
+    M must be a M_sun Quantity
+    Returns free-fall time in yr Quantity
+    '''
+    t= np.sqrt((r)**3/(G * M)).decompose().to(u.yr)
+    return t
+
+def distance_pix(x0, y0, x, y):
+    dis = np.sqrt((x-x0)**2 + (y-y0)**2)
+    return dis
+
+def distance_physical(ra0, dec0, ra, dec, header):
+    ra0_pix, dec0_pix = WCS(header).celestial.all_world2pix(ra0, dec0, 0)
+    dist_pix = distance_pix(ra0_pix, dec0_pix, ra, dec)
+    dist_deg = (np.abs(header['CDELT2'])* u.deg).to(u.arcsec) * dist_pix
+    dist = dist_deg.value * dist_Per50 # pc * deg = au
+    return dist
+
+def M_hydrogen2(N, mu, D, deltara, deltadec):
+    Mass = N * (mu * m_p) * (D**2) * np.abs(deltara * deltadec)
+    return Mass.to(u.Msun)
+
 def J_nu(nu, T):
     """
     Calculates the Rayleigh-Jeans equivalent temperature J_nu, in particular to
@@ -61,8 +85,10 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     NC18O = constant * Qrot(B0, Tex)/5 * np.exp(Eu / Tex) / \
         (np.exp(10.54*u.K/Tex)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
     return NC18O.to(u.cm**(-2))
-constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
-constant.decompose().to(u.s/u.km/u.cm**2)
+
+# constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
+# constant.decompose().to(u.s/u.km/u.cm**2)
+
 '''
 Inputs
 '''
@@ -190,13 +216,67 @@ else:
         results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
         print(Tex, MH2, MH2.to(u.Msun))
 
-    # results_mass.to_csv(tablefile)
+    results_mass.to_csv(tablefile)
 
+NC18Omap = fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0))
+NH2map = NC18Omap * X_C18O * (u.cm**-2)
+leny, lenx = np.shape(NH2map)
+
+# This is to have an idea of the total mass
 M_s = 1.71*u.Msun
 M_env = np.array([0.18,0.39])*u.Msun
 M_disk = 0.58*u.Msun
 Mstar = (M_s+M_env+M_disk)
-t_ff = np.sqrt((3300*u.AU)**3/(G * Mstar)).decompose().to(u.yr)
+t_ff = t_freefall(3300*u.AU, Mstar)
+leny, lenx = np.shape(NC18Omap)
 
 M_acc = results_mass['M (M_sun)'].values * u.Msun
 M_dot = [M_acc / t_ff[0], M_acc / t_ff[1]]
+
+# Now, we separate the streamer in bins
+
+xx, yy = np.meshgrid(range(lenx), range(leny))
+
+distance_map = distance_physical(ra_Per50.value,dec_Per50.value, xx, yy, NC18Oheader)
+binsize = 100 # au
+
+radiuses = np.arange(0,3100, binsize)
+binradii = np.arange(50,3050,binsize) # u.AU
+masses = np.zeros(len(binradii)) * u.Msun
+times = np.zeros((len(binradii),2)) * u.yr
+m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
+
+for i in range(len(radiuses)-1):
+    mask = np.where((distance_map>radiuses[i]) & (distance_map<radiuses[i+1]))
+    NH2tot = np.nansum(NH2map[mask])
+    masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
+    times[i] = t_freefall(binradii[i]*u.AU, Mstar)
+    m_acclist[i] = [masses[i] / times[i,0], masses[i] / times[i,1]]
+
+
+fig = plt.figure(figsize=(6,6))
+ax3 = fig.add_subplot(313)
+ax3.plot(binradii, m_acclist[:,0].value, 'r--')
+ax3.plot(binradii, m_acclist[:,1].value, 'r-')
+ax3.set_xlabel('Distance from Protostar (au)')
+ax3.set_ylabel(r'$\dot{M}$ (M$_{\odot}$ yr$^{-1}$)')
+
+ax = fig.add_subplot(311, sharex=ax3)
+ax.plot(binradii, masses.value, 'ro-')
+ax.set_ylabel(r'Mass within 100 au ($M_{\odot}$)')
+
+ax2 = fig.add_subplot(312, sharex=ax3)
+ax2.plot(binradii, times[:,0].value, 'r--', label=r'$M_{*}=$'+str(np.round(Mstar[0],2)))
+ax2.plot(binradii, times[:,1].value, 'r-', label=r'$M_{*}=$'+str(Mstar[1]))
+ax2.set_ylabel(r'Free-fall timescale (yr$^{-1}$)')
+ax2.legend()
+plt.setp(ax2.get_xticklabels(), visible=False)
+plt.setp(ax.get_xticklabels(), visible=False)
+
+
+fig
+# plt.imshow(distance_map, origin='lower')
+
+# for x in range(lenx):
+#     for y in range(leny):
+#         ra, dec = wcsmom

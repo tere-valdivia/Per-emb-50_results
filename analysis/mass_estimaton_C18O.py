@@ -11,8 +11,11 @@ import os
 import regions
 import matplotlib.pyplot as plt
 from astropy.constants import G
+from astropy.coordinates import SkyCoord, FK5
 import aplpy
 import copy
+import velocity_tools.stream_lines as SL
+import pickle
 
 # TODO: Add error propagation
 '''
@@ -242,16 +245,36 @@ leny, lenx = np.shape(NC18Omap)
 M_acc = results_mass['M (M_sun)'].values * u.Msun
 M_dot = [M_acc / t_ff[0], M_acc / t_ff[1]]
 
-
 # Now, we separate the streamer in bins
+# Now we do the same for the streamer-calculated distances
 
 xx, yy = np.meshgrid(range(lenx), range(leny))
 
 distance_map = distance_physical(ra_Per50.value,dec_Per50.value, xx, yy, NC18Oheader)
 binsize = 200 # au
 
-radiuses = np.arange(0,3100, binsize)
-binradii = np.arange(100,3100,binsize) # u.AU
+modelname = 'H2CO_0.39Msun_env'
+fileinpickle = 'streamer_model_'+modelname+'_params'
+pickle_in = open(fileinpickle+'.pickle', "rb")
+streamdict = pickle.load(pickle_in)
+omega0 = streamdict['omega0']
+r0 = streamdict['r0']
+theta0 = streamdict['theta0']
+phi0 = streamdict['phi0']
+v_r0 = streamdict['v_r0']
+inc = streamdict['inc']
+PA_ang = streamdict['PA']
+(x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
+    mass=Mstar[1], r0=r0, theta0=theta0, phi0=phi0,
+    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=10*u.au)
+rc = SL.r_cent(mass=Mstar[1], omega=omega0, r0=r0)
+
+# y1 is in au
+dist_streamer = np.sqrt(x1**2+y1**2+z1**2)
+dist_projected = np.sqrt(x1**2+z1**2)
+
+radiuses = np.arange(0,3300, binsize) # list of streamer lengths we want to sample
+binradii = np.arange(100,3300,binsize) # u.AU  of  the streamer length
 masses = np.zeros(len(binradii)) * u.Msun
 masseskink = np.zeros(len(binradii)) * u.Msun
 times = np.zeros((len(binradii),2)) * u.yr
@@ -259,7 +282,9 @@ m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
 m_acclistkink = np.zeros((len(binradii),2)) * u.Msun / u.yr
 
 for i in range(len(radiuses)-1):
-    mask = np.where((distance_map>radiuses[i]) & (distance_map<radiuses[i+1]))
+    xzrange = dist_projected[np.where((dist_streamer.value>radiuses[i]) & (dist_streamer.value<radiuses[i+1]))]
+    mask = np.where((distance_map>np.amin(xzrange.value)) & (distance_map<np.amax(xzrange.value)))
+    # mask = np.where((distance_map>radiuses[i]) & (distance_map<radiuses[i+1]))
     NH2tot = np.nansum(NH2map[mask])
     NH2totkink = np.nansum(NH2mapkink[mask])
     masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
@@ -268,33 +293,40 @@ for i in range(len(radiuses)-1):
     m_acclist[i] = [masses[i] / times[i,0], masses[i] / times[i,1]]
     m_acclistkink[i] = [masseskink[i] / times[i,0], masseskink[i] / times[i,1]]
 
-
 fig = plt.figure(figsize=(6,6))
 ax3 = fig.add_subplot(313)
-ax3.scatter(binradii, m_acclist[:,1].value, s=50, facecolors='none', edgecolors='r', label='No kink')
-ax3.scatter(binradii, m_acclistkink[:,1].value, s=50, facecolors='r', edgecolors='r',label='kink')
+ax3.scatter(binradii[1:], m_acclist[1:,1].value, s=50, facecolors='none', edgecolors='r')
+ax3.scatter(binradii[1:], m_acclistkink[1:,1].value, s=50, facecolors='r', edgecolors='r')
 ax3.set_yscale('log')
 ax3.set_xlabel('Distance from Protostar (au)')
 ax3.set_ylabel(r'$\dot{M}$ (M$_{\odot}$ yr$^{-1}$)')
 ax3.annotate('bin size = {} au'.format(binsize), (0.6,0.8), xycoords='axes fraction', size=14)
+ax3.axvline(293, color='k', linestyle='dashed')
+ax3.axvline(rc.value, color='b', linestyle='dotted')
+ax3.set_xlim([0,3300])
 
 ax = fig.add_subplot(311, sharex=ax3)
-ax.scatter(binradii, masses.value*1e3, s=50, facecolors='none', edgecolors='r', label='No kink')
-ax.scatter(binradii, masseskink.value*1e3, s=50, facecolors='r', edgecolors='r',label='kink')
+ax.scatter(binradii[1:], masses[1:].value*1e3, s=50, facecolors='none', edgecolors='r', label='No kink')
+ax.scatter(binradii[1:], masseskink[1:].value*1e3, s=50, facecolors='r', edgecolors='r',label='kink')
 ax.set_ylabel(r'Mass in bin ($\times 10^3$ M$_{\odot}$)')
 ax.legend(loc=4)
+ax.axvline(293, color='k', linestyle='dashed')
+# ax.annotate('Beam FWHM',(0.12,0.8), xycoords='axes fraction', size=14, rotation=90)
+ax.text(350,0.2, 'Beam FWHM', size=10, rotation=90)
+ax.axvline(rc.value, color='b', linestyle='dotted')
+ax.text(150,0.2, r'$r_c=$'+str(round(rc.value,1))+' au', size=10, rotation=90, color='b')
 
 ax2 = fig.add_subplot(312, sharex=ax3)
-ax2.scatter(binradii, times[:,1].value, s=50, facecolors='b', edgecolors='b', label=r'$M_{*}=$'+str(Mstar[1]))
+ax2.scatter(binradii[1:], times[1:,1].value, s=50, facecolors='b', edgecolors='b', label=r'$M_{*}=$'+str(Mstar[1]))
 ax2.set_ylabel(r'Free-fall timescale (yr$^{-1}$)')
 ax2.set_yscale('log')
 ax2.legend()
+ax2.axvline(293, color='k', linestyle='dashed')
+ax2.axvline(rc.value, color='b', linestyle='dotted')
 plt.setp(ax2.get_xticklabels(), visible=False)
 plt.setp(ax.get_xticklabels(), visible=False)
 
 fig.savefig('column_dens_maps/plot_mass_accretion_radius.pdf', dpi=300, bbox_inches='tight')
-
-ra0_pix, dec0_pix = wcsmap.all_world2pix(ra_Per50.value, dec_Per50.value, 0)
 
 def fmt(x):
     s = f"{x:.1f}"
@@ -302,32 +334,33 @@ def fmt(x):
         s = f"{x:.0f}"
     return rf"{s}" if plt.rcParams["text.usetex"] else f"{s} %"
 
-fig2 = plt.figure(figsize=(4,4))
-ax = fig2.add_subplot(111, projection=wcsmap)
-cmap = copy.copy(plt.cm.viridis)
-cmap.set_bad(np.array((1,1,1))*0.85)
-im = ax.imshow(fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0)), cmap=cmap)
-plt.colorbar(im, ax=ax, label=r'N(C$^{18}$O) (cm$^{-2}$)')
-cs = ax.contour(distance_map, levels=radiuses, colors='k', linewidths=1, linestyles='dashed')
-ax.clabel(cs, cs.levels[::3],inline=True,fmt=fmt,fontsize=15)
-
-fig2.savefig('column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_distance.pdf'.format(10.0))
+# fig2 = plt.figure(figsize=(4,4))
+# ax = fig2.add_subplot(111, projection=wcsmap)
+# cmap = copy.copy(plt.cm.viridis)
+# cmap.set_bad(np.array((1,1,1))*0.85)
 
 fig3 = plt.figure(figsize=(4,4))
-ax = fig3.add_subplot(111, projection=wcsmap)
-im = ax.imshow(fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0)), cmap=cmap)
-plt.colorbar(im, ax=ax, label=r'N(C$^{18}$O) (cm$^{-2}$)')
-cs = ax.contour(distance_map, levels=radiuses, colors='k', linewidths=1, linestyles='dashed')
-ax.clabel(cs, cs.levels[::3],inline=True,fmt=fmt,fontsize=15)
-fig3.savefig('column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_kink_distance.pdf'.format(10.0))
+gc = aplpy.FITSFigure('column_dens_maps/'+NC18Ofilenamekink.format(10.0), figure=fig3)
+gc.show_colorscale()
+gc.add_colorbar()
+gc.add_beam()
+gc.beam.set_color('k')
+gc.beam.set_frame(False)
+gc.set_nan_color(np.array((1,1,1))*0.85)
+gc.colorbar.set_axis_label_text(r'N(C$^{18}$O) (cm$^{-2}$)')
+# fig3.savefig('column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_kink_aplpy.pdf'.format(10.0), dpi=300, bbox_inches='tight')
 
-# gc = aplpy.FITSFigure('column_dens_maps/'+NC18Ofilenamekink.format(10.0), figure=fig3)
-# gc.show_colorscale()
-# gc.add_colorbar()
-# distancehdu = fits.PrimaryHDU(data=distance_map, header=NC18Oheader)
-# gc.show_contour(distancehdu,levels=radiuses,colors='k', linewidths=0.5, linestyles='dashed')
-# plt.imshow(distance_map, origin='lower')
+fig4 = plt.figure(figsize=(4,4))
+ax4 = fig4.add_subplot(111)
+ax4.plot(dist_projected.value,dist_streamer.value-dist_projected.value,'g-')
+ax4.axvline(rc.value, color='b', linestyle='dotted', label=r'$r_c=$'+str(round(rc.value,1))+' au')
+ax4.axvline(293, color='k', linestyle='dashed', label='Beam FWHM')
+ax4.set_xlabel('Projected distance (au)')
+ax4.set_ylabel(r'Difference b/w 3D and projected distance (au)')
+ax4.legend()
+# fig4.savefig(fileinpickle+'_distance_projection.pdf', dpi=300, bbox_inches='tight')
 
-# for x in range(lenx):
-#     for y in range(leny):
-#         ra, dec = wcsmom
+# If we want to know the angle
+
+# angles = (np.arccos(dist_projected.value/dist_streamer.value) * u.rad).to(u.deg).value
+# plt.plot(dist_projected.value,y1.value)

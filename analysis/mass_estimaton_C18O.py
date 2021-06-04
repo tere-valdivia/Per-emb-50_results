@@ -16,6 +16,7 @@ import aplpy
 import copy
 import velocity_tools.stream_lines as SL
 import pickle
+from uncertainties import ufloat, unumpy
 
 # TODO: Add error propagation
 '''
@@ -43,8 +44,27 @@ def distance_physical(ra0, dec0, ra, dec, header):
     return dist
 
 def M_hydrogen2(N, mu, D, deltara, deltadec):
-    Mass = N * (mu * m_p) * (D**2) * np.abs(deltara * deltadec)
-    return Mass.to(u.Msun)
+    """
+    Returns the gas mass of molecular hydrogen, given the sum of column density
+    N in cm-2.
+
+    Requires N to be in cm-2 but without unit. Returns in solar masses
+
+    Args:
+        variable (type): description
+
+    Returns:
+        type: description
+
+    Raises:
+        Exception: description
+
+    """
+    preamble = (mu * m_p) * (D**2) * np.abs(deltara * deltadec)
+    Mass = N * preamble.value
+    Mass_unit = ((1 * u.cm**(-2) * preamble.unit).to(u.Msun)).value
+    # return Mass.to(u.Msun)
+    return Mass * Mass_unit
 
 def J_nu(nu, T):
     """
@@ -83,14 +103,16 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     is the same constant we get here divided by k_b/hB0 and multiplied by
     2J+1 = 5
 
-    TdVin must be in K km/s
+    TdVin must be in K km/s, but must not be a Quantity, but a ufloat
     '''
     nu = 219560.3541 * u.MHz
     constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
     Eu = 15.81 * u.K
-    NC18O = constant * Qrot(B0, Tex)/5 * np.exp(Eu / Tex) / \
-        (np.exp(10.54*u.K/Tex)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K)) * TdV/f
-    return NC18O.to(u.cm**(-2))
+    preamble = constant * Qrot(B0, Tex)/5 * np.exp(Eu / Tex) / (np.exp(10.54*u.K/Tex)-1) * 1/(J_nu(nu, Tex) - J_nu(nu, 2.73*u.K))
+    NC18O = preamble.value * TdV/f
+    N_unit = (1. * preamble.unit * u.K * u.km / u.s).to(u.cm**(-2)).value
+    # return NC18O.to(u.cm**(-2))
+    return NC18O * N_unit
 
 # constant = 3 * h / (8*np.pi**3 * (1.1079e-19 *u.esu *u.cm)**2 *2/5)
 # constant.decompose().to(u.s/u.km/u.cm**2)
@@ -100,13 +122,14 @@ Inputs
 '''
 # filenameH2CO = '../H2CO/CDconfigsmall/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_fitted'
 filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
-tablefile = 'M_H2_Tex_fixed_mom0_pbcor.csv'
-tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink.csv'
-# snratio = 1
-# rms = 13.94 * u.mJy/u.beam
-# rms = 0.347 * u.K
+filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
+tablefile = 'M_H2_Tex_fixed_mom0_pbcor_unc.csv'
+tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink_unc.csv'
+rms = 2.4041 * u.K * u.km/u.s
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
+uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
 NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
+uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
 NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 X_C18O = 5.9e6 # Look for Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
@@ -123,7 +146,6 @@ End inputs
 '''
 
 # reproject the C18O to the H2CO wcs
-
 # if not os.path.exists(filenameC18O+'_reprojectH2COs_2.fits'):
 #     cubeH2CO = SpectralCube.read(filenameH2CO+'.fits').with_spectral_unit(u.km/u.s).spectral_slab(velinit,velend)
 #     cubeC18O = SpectralCube.read(filenameC18O+'.fits').with_spectral_unit(u.km/u.s)
@@ -183,55 +205,131 @@ deltara = (NC18Oheader['CDELT1'] * u.deg).to(u.rad).value
 deltadec = (NC18Oheader['CDELT2'] * u.deg).to(u.rad).value
 wcsmom = WCS(NC18Oheader)
 mom0 = fits.getdata(filenameC18O+'.fits') *u.K * u.km/u.s
+u_mom0 = rms * np.ones(np.shape(mom0))
+mom0 = unumpy.uarray(mom0.value,u_mom0.value) # they cannot be with units
+mom0kink = fits.getdata(filenameC18Okink+'.fits') *u.K * u.km/u.s
+u_mom0kink = rms * np.ones(np.shape(mom0kink))
+mom0kink = unumpy.uarray(mom0kink.value,u_mom0kink.value)
+
 NC18Oheader['bunit'] = 'cm-2'
 
-if os.path.exists(tablefile):
+if os.path.exists(tablefilekink) and os.path.exists(tablefile):
     results_mass = pd.read_csv(tablefile)
     results_mass_kink = pd.read_csv(tablefilekink)
 else:
-    results_mass = pd.DataFrame(index=Texlist.value)
+    if not os.path.exists(tablefile):
+        results_mass = pd.DataFrame(index=Texlist.value)
 
-    for Tex in Texlist:
-        # Do a N(C18O) map
-        NC18O = N_C18O_21(mom0, B0, Tex) # the mom0 must have K km/s units
-        #We save the column density obtained in a fits file
-        if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(Tex.value)):
-            newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-            newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(Tex.value))
-        # We plot the column density
-        fig = plt.figure(figsize=(4,4))
-        ax = fig.add_subplot(111, projection=wcsmom)
-        im = ax.imshow(NC18O.value)
-        fig.colorbar(im,ax=ax,label=r'N(C$^{18}$O) (cm$^{-2}$)')
-        ax.set_xlabel('RA (J2000)')
-        ax.set_ylabel('DEC (J2000)')
-        if not os.path.exists('column_dens_maps/'+NC18Oplotname.format(Tex.value)):
-            fig.savefig('column_dens_maps/'+NC18Oplotname.format(Tex.value))
+        for Tex in Texlist:
+            # Do a N(C18O) map
+            NC18O = N_C18O_21(mom0, B0, Tex) # the mom0 must have K km/s units
+            #We save the column density obtained in a fits file
+            if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(Tex.value)):
+                # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
+                newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
+                newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(Tex.value))
+            if not os.path.exists('column_dens_maps/'+uNC18Ofilename.format(Tex.value)):
+                # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
+                newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
+                newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(Tex.value))
+            # We plot the column density
+            # fig = plt.figure(figsize=(4,4))
+            # ax = fig.add_subplot(111, projection=wcsmom)
+            # im = ax.imshow(NC18O.value)
+            # fig.colorbar(im,ax=ax,label=r'N(C$^{18}$O) (cm$^{-2}$)')
+            # ax.set_xlabel('RA (J2000)')
+            # ax.set_ylabel('DEC (J2000)')
+            # if not os.path.exists('column_dens_maps/'+NC18Oplotname.format(Tex.value)):
+            #     fig.savefig('column_dens_maps/'+NC18Oplotname.format(Tex.value))
 
-        # Calculate statistics for future reference
-        results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
-        results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
-        results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
-        results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
-        results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
-        # Now, we calculate the column density of H2
-        results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
-        NH2 = NC18O * X_C18O
-        NH2tot = np.nansum(NH2)
-        results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
-        MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
-        results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
-        results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
-        print(Tex, MH2, MH2.to(u.Msun))
+            # Calculate statistics for future reference
+            # results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
+            results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O).n
+            # results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
+            results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(unumpy.nominal_values(NC18O))
+            # results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
+            results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(unumpy.nominal_values(NC18O))
+            # results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
+            results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O).n
+            # results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
+            results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O).n
+            # Now, we calculate the column density of H2
+            # results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
+            Nsum = np.nansum(NC18O)
+            results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
+            results_mass.loc[Tex.value, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
+            NH2 = NC18O * X_C18O
+            NH2tot = np.nansum(NH2)
+            # results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
+            results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.n
+            results_mass.loc[Tex.value, 'u Sum NH2 (cm-2 Npx)'] = NH2tot.s
+            MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
+            # MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
+            # results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
+            # results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
+            results_mass.loc[Tex.value, 'M (M_sun)'] = MH2.n
+            results_mass.loc[Tex.value, 'u M (M_sun)'] = MH2.s
+            # print(Tex, MH2, MH2.to(u.Msun))
 
-    results_mass.to_csv(tablefile)
+        results_mass.to_csv(tablefile)
+    if not os.path.exists(tablefilekink):
+        results_mass_kink = pd.DataFrame(index=Texlist.value)
 
-NC18Omap = fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0))
-NC18Omapkink = fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0))
+        for Tex in Texlist:
+            # Do a N(C18O) map
+            NC18O = N_C18O_21(mom0kink, B0, Tex) # the mom0 must have K km/s units
+            #We save the column density obtained in a fits file
+            if not os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(Tex.value)):
+                # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
+                newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
+                newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(Tex.value))
+            if not os.path.exists('column_dens_maps/'+uNC18Ofilenamekink.format(Tex.value)):
+                # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
+                newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
+                newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(Tex.value))
+            # Calculate statistics for future reference
+            # results_mass_kink.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
+            results_mass_kink.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O).n
+            # results_mass_kink.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
+            results_mass_kink.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(unumpy.nominal_values(NC18O))
+            # results_mass_kink.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
+            results_mass_kink.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(unumpy.nominal_values(NC18O))
+            # results_mass_kink.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
+            results_mass_kink.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O).n
+            # results_mass_kink.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
+            results_mass_kink.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O).n
+            # Now, we calculate the column density of H2
+            # results_mass_kink.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
+            Nsum = np.nansum(NC18O)
+            results_mass_kink.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
+            results_mass_kink.loc[Tex.value, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
+            NH2 = NC18O * X_C18O
+            NH2tot = np.nansum(NH2)
+            # results_mass_kink.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
+            results_mass_kink.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.n
+            results_mass_kink.loc[Tex.value, 'u Sum NH2 (cm-2 Npx)'] = NH2tot.s
+            MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
+            # MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
+            # results_mass_kink.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
+            # results_mass_kink.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
+            results_mass_kink.loc[Tex.value, 'M (M_sun)'] = MH2.n
+            results_mass_kink.loc[Tex.value, 'u M (M_sun)'] = MH2.s
+            # print(Tex, MH2, MH2.to(u.Msun))
+
+        results_mass_kink.to_csv(tablefilekink)
+    results_mass = pd.read_csv(tablefile)
+    results_mass_kink = pd.read_csv(tablefilekink)
+
+# NC18Omap = fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0))
+NC18Omap = unumpy.uarray(fits.getdata('column_dens_maps/'+NC18Ofilename.format(10.0)), fits.getdata('column_dens_maps/'+uNC18Ofilename.format(10.0)))
+
+# NC18Omapkink = fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0))
+NC18Omapkink = unumpy.uarray(fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(10.0)), fits.getdata('column_dens_maps/'+uNC18Ofilenamekink.format(10.0)))
+
 wcsmap = WCS(fits.getheader('column_dens_maps/'+NC18Ofilename.format(10.0))).celestial
 
-NH2map = NC18Omap * X_C18O * (u.cm**-2)
-NH2mapkink = NC18Omapkink * X_C18O * (u.cm**-2)
+NH2map = NC18Omap * X_C18O # * (u.cm**-2)
+NH2mapkink = NC18Omapkink * X_C18O # * (u.cm**-2)
 leny, lenx = np.shape(NH2map)
 
 # This is to have an idea of the total mass
@@ -242,8 +340,9 @@ Mstar = (M_s+M_env+M_disk)
 t_ff = t_freefall(3300*u.AU, Mstar)
 leny, lenx = np.shape(NC18Omap)
 
-M_acc = results_mass['M (M_sun)'].values * u.Msun
-M_dot = [M_acc / t_ff[0], M_acc / t_ff[1]]
+M_acc = unumpy.uarray(results_mass_kink['M (M_sun)'].values, results_mass_kink['u M (M_sun)'].values)
+M_dot = [M_acc / t_ff[0].value, M_acc / t_ff[1].value]
+
 
 # Now, we separate the streamer in bins
 # Now we do the same for the streamer-calculated distances
@@ -273,13 +372,18 @@ rc = SL.r_cent(mass=Mstar[1], omega=omega0, r0=r0)
 dist_streamer = np.sqrt(x1**2+y1**2+z1**2)
 dist_projected = np.sqrt(x1**2+z1**2)
 
+
 radiuses = np.arange(0,3300, binsize) # list of streamer lengths we want to sample
 binradii = np.arange(100,3300,binsize) # u.AU  of  the streamer length
-masses = np.zeros(len(binradii)) * u.Msun
-masseskink = np.zeros(len(binradii)) * u.Msun
+masses = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
+masseskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
+# masses = np.zeros(len(binradii)) * u.Msun
+# masseskink = np.zeros(len(binradii)) * u.Msun
 times = np.zeros((len(binradii),2)) * u.yr
-m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
-m_acclistkink = np.zeros((len(binradii),2)) * u.Msun / u.yr
+# m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
+# m_acclistkink = np.zeros((len(binradii),2)) * u.Msun / u.yr
+m_acclist = unumpy.uarray(np.zeros((len(binradii),2)), np.zeros((len(binradii),2)))
+m_acclistkink = unumpy.uarray(np.zeros((len(binradii),2)), np.zeros((len(binradii),2)))
 
 for i in range(len(radiuses)-1):
     xzrange = dist_projected[np.where((dist_streamer.value>radiuses[i]) & (dist_streamer.value<radiuses[i+1]))]
@@ -290,13 +394,14 @@ for i in range(len(radiuses)-1):
     masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
     masseskink[i] = M_hydrogen2(NH2totkink, mu_H2, distance, deltara, deltadec)
     times[i] = t_freefall(binradii[i]*u.AU, Mstar)
-    m_acclist[i] = [masses[i] / times[i,0], masses[i] / times[i,1]]
-    m_acclistkink[i] = [masseskink[i] / times[i,0], masseskink[i] / times[i,1]]
+    m_acclist[i] = [masses[i] / times[i,0].value, masses[i] / times[i,1].value]
+    m_acclistkink[i] = [masseskink[i] / times[i,0].value, masseskink[i] / times[i,1].value]
 
 fig = plt.figure(figsize=(6,6))
 ax3 = fig.add_subplot(313)
-ax3.scatter(binradii[1:], m_acclist[1:,1].value, s=50, facecolors='none', edgecolors='r')
-ax3.scatter(binradii[1:], m_acclistkink[1:,1].value, s=50, facecolors='r', edgecolors='r')
+ax3.errorbar(binradii[1:], unumpy.nominal_values(m_acclist[1:,1]), yerr=unumpy.std_devs(m_acclist[1:,1]), marker='o', linestyle='none', mfc='none', mec='r', ecolor='r')
+ax3.errorbar(binradii[1:], unumpy.nominal_values(m_acclistkink[1:,1]), yerr=unumpy.std_devs(m_acclistkink[1:,1]), marker='o', linestyle='none', mfc='r', mec='r', ecolor='r')
+# ax3.scatter(binradii[1:], m_acclistkink[1:,1].value, s=50, facecolors='r', edgecolors='r')
 ax3.set_yscale('log')
 ax3.set_xlabel('Distance from Protostar (au)')
 ax3.set_ylabel(r'$\dot{M}$ (M$_{\odot}$ yr$^{-1}$)')
@@ -306,8 +411,10 @@ ax3.axvline(rc.value, color='b', linestyle='dotted')
 ax3.set_xlim([0,3300])
 
 ax = fig.add_subplot(311, sharex=ax3)
-ax.scatter(binradii[1:], masses[1:].value*1e3, s=50, facecolors='none', edgecolors='r', label='No kink')
-ax.scatter(binradii[1:], masseskink[1:].value*1e3, s=50, facecolors='r', edgecolors='r',label='kink')
+ax.errorbar(binradii[1:], unumpy.nominal_values(masses[1:])*1e3, yerr=unumpy.std_devs(masses[1:])*1e3, marker='o', linestyle='none', mfc='none', mec='r', ecolor='r', label='No kink')
+ax.errorbar(binradii[1:], unumpy.nominal_values(masseskink[1:])*1e3, yerr=unumpy.std_devs(masseskink[1:])*1e3, marker='o', linestyle='none', mfc='r', mec='r', ecolor='r', label='kink')
+# ax.scatter(binradii[1:], masses[1:].value*1e3, s=50, facecolors='none', edgecolors='r', label='No kink')
+# ax.scatter(binradii[1:], masseskink[1:].value*1e3, s=50, facecolors='r', edgecolors='r',label='kink')
 ax.set_ylabel(r'Mass in bin ($\times 10^3$ M$_{\odot}$)')
 ax.legend(loc=4)
 ax.axvline(293, color='k', linestyle='dashed')
@@ -326,7 +433,7 @@ ax2.axvline(rc.value, color='b', linestyle='dotted')
 plt.setp(ax2.get_xticklabels(), visible=False)
 plt.setp(ax.get_xticklabels(), visible=False)
 
-fig.savefig('column_dens_maps/plot_mass_accretion_radius.pdf', dpi=300, bbox_inches='tight')
+# fig.savefig('column_dens_maps/plot_mass_accretion_radius.pdf', dpi=300, bbox_inches='tight')
 
 def fmt(x):
     s = f"{x:.1f}"

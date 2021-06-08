@@ -11,6 +11,7 @@ sys.path.append('../')
 from NOEMAsetup import *
 import pyspeckit
 import regions
+from regions import PixCoord
 import matplotlib.pyplot as plt
 
 '''
@@ -156,8 +157,9 @@ spc3 = spc.copy()
 """
 # mom01 = np.where(spc.momentcube[0]>rms*snratio, spc.momentcube[0],rms*snratio)
 # initguesses = np.array([mom01,spc.momentcube[1],spc.momentcube[2]])
-np.where(np.isnan(spc.momentcube))
+
 mom01 = np.where(spc.momentcube[0]>rms*snratio, spc.momentcube[0],rms*snratio)
+leny, lenx = np.shape(mom01)
 initguesses = np.array([mom01,spc.momentcube[1],spc.momentcube[2]])
 fitfile1 = cubefile + '_1G_fitparams.fits'
 if not os.path.exists(fitfile1):
@@ -209,12 +211,22 @@ fitregionfile = 'SO_2G_fitregion.reg'
 
 regionlist = regions.read_ds9(fitregionfile)
 region_sample = regionlist[0].to_pixel(wcscel)
-region_mask = np.repeat([region_sample.to_mask().data], 3, axis=0)
-wheremask = np.where(region_mask)
-# we load the fitcube
-fitcube = fits.getdata(fitcubefile)
-fitcubeshape = np.shape(fitcube)
-for z,y,x, k,j,i in zip(wheremask[0],wheremask[1],wheremask[2], range(3), range(fitcubeshape[1]),range(fitcubeshape[2])):
-    spc.parcube[z,y,x] = fitcube[k,j,i]
+region_mask = region_sample.to_mask().to_image((leny, lenx))
+region_sample.width
 
-plt.imshow(spc.parcube[1])
+# we load the fitcube
+fitcube = fits.getdata(fitcubefile)[0:3]
+fitcubeshape = np.shape(fitcube)
+initx = int(region_sample.center.x - region_sample.width/2)
+inity = int(region_sample.center.y - region_sample.height/2)
+for k in range(3):
+    for j in range(int(region_sample.height)):
+        for i in range(int(region_sample.width)):
+            spc.parcube[k,j+inity,i+initx] = fitcube[k, j, i]
+
+
+# for y,x,j,i in zip(wheremask[1],wheremask[2], range(fitcubeshape[1]),range(fitcubeshape[2])):
+#     amplitude[y,x] = fitcube[0,j,i]
+fitfile1streamer = cubefile + '_1G_streamer.fits'
+if not os.path.exists(fitfile1streamer):
+    spc.write_fit(fitfile1streamer)

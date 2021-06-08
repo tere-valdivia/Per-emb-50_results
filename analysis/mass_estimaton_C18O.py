@@ -126,7 +126,7 @@ filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
 filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
 tablefile = 'M_H2_Tex_fixed_mom0_pbcor_unc.csv'
 tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink_unc.csv'
-tablefilemacc = 'M_Mdot_Tex_fixed_mom0_pbcor_binned_unc.csv'
+tablefilemacc = 'M_Mdot_Tex_fixed_mom0_pbcor_binned_unc_tmodel.csv'
 rms = 2.4041 * u.K * u.km/u.s
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
@@ -329,6 +329,16 @@ rc = SL.r_cent(mass=Mstar[1], omega=omega0, r0=r0)
 mass_streamer_table = pd.DataFrame()
 dist_streamer = np.sqrt(x1**2+y1**2+z1**2)
 dist_projected = np.sqrt(x1**2+z1**2)
+vel_streamer = np.sqrt(vx1**2+vy1**2+vz1**2)
+
+deltas = np.array([np.sqrt((x1[i]-x1[i+1]).value**2 + (y1[i]-y1[i+1]).value**2 + (z1[i]-z1[i+1]).value**2) for i in range(len(dist_streamer)-1)]) * u.au
+time_integral_path = np.zeros(len(dist_streamer)) * u.yr
+
+for i in reversed(range(len(vel_streamer)-1)):
+    # time to the rc is 0
+    t = time_integral_path[i+1]
+    deltat = (deltas[i]/ vel_streamer[i+1]).to(u.yr)
+    time_integral_path[i] = t + deltat
 
 radiuses = np.arange(0.,3200., binsize) # list of projected lengths we want to sample
 # binradii = np.arange(binsize/2,3300.,binsize) # u.AU  of the streamer length
@@ -343,8 +353,7 @@ times = np.zeros((len(binradii),2)) * u.yr
 m_acclist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 m_acclistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 radius3Dmap = np.zeros(np.shape(mom0)) * np.nan
-# We need to save the previous limit
-# aux_min = 0.
+
 
 mass_streamer_table['2D bin minimum (au)'] = radiuses[:len(radiuses)-1]
 mass_streamer_table['2D bin maximum (au)'] = radiuses[1:]
@@ -355,20 +364,17 @@ for i in range(len(radiuses)-1):
     # This is the mask of the pixels in the map
     # within these pixels are the x,z of the streamer
     # streamer distances within these bin of projected distances
-    streamer_distances = dist_streamer[np.where((dist_projected.value>radiuses[i]) & (dist_projected.value<radiuses[i+1]))]
+    indexbin = np.where((dist_projected.value>radiuses[i]) & (dist_projected.value<radiuses[i+1]))
+    streamer_distances = dist_streamer[indexbin]
+    streamer_times = time_integral_path[indexbin]
     # Now, what is the mean 3D distance for this bin
     binradii[i] = np.mean(streamer_distances)
-    # xzrange = dist_projected[np.where((dist_streamer.value>radiuses[i]) & (dist_streamer.value<radiuses[i+1]))]
-    # mask = np.where((distance_map>np.amin(xzrange.value)) & (distance_map<np.amax(xzrange.value)))
-    # aux_max = np.amax(xzrange.value)
-    # mask = np.where((distance_map>aux_min) & (distance_map<=aux_max))
-    # radius3Dmap[mask] = binradii[i]
-    # aux_min = aux_max
     NH2tot = np.nansum(NH2map[mask])
     NH2totkink = np.nansum(NH2mapkink[mask])
     masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
     masseskink[i] = M_hydrogen2(NH2totkink, mu_H2, distance, deltara, deltadec)
-    times[i] = t_freefall(binradii[i], Mstar)
+    # times[i] = t_freefall(binradii[i], Mstar)
+    times[i] = np.mean(streamer_times)
     m_acclist[i] = masses[i] / times[i,1].value
     m_acclistkink[i] = masseskink[i] / times[i,1].value
 # indexnans = np.where(np.isnan(unumpy.nominal_values(mom0kink)))
@@ -389,7 +395,8 @@ mass_streamer_table['Mdot wo kink (Msun yr-1)'] = unumpy.nominal_values(m_acclis
 mass_streamer_table['u Mdot wo kink (Msun yr-1)'] = unumpy.std_devs(m_acclist)
 mass_streamer_table['Mdot w kink (Msun yr-1)'] = unumpy.nominal_values(m_acclistkink)
 mass_streamer_table['u Mdot w kink (Msun yr-1)'] = unumpy.std_devs(m_acclistkink)
-mass_streamer_table.to_csv(tablefilemacc)
+if not os.path.exists(tablefilemacc):
+    mass_streamer_table.to_csv(tablefilemacc)
 
 if not os.path.exists(radiusmapname):
     radiusheader = NC18Oheader.copy()

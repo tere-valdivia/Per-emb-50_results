@@ -325,35 +325,31 @@ PA_ang = streamdict['PA']
     omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=10*u.au)
 rc = SL.r_cent(mass=Mstar[1], omega=omega0, r0=r0)
 
-# y1 is in au
+# (x1, y1, z1) is in au
 mass_streamer_table = pd.DataFrame()
-dist_streamer = np.sqrt(x1**2+y1**2+z1**2)
-dist_projected = np.sqrt(x1**2+z1**2)
-vel_streamer = np.sqrt(vx1**2+vy1**2+vz1**2)
 
-deltas = np.array([np.sqrt((x1[i]-x1[i+1]).value**2 + (y1[i]-y1[i+1]).value**2 + (z1[i]-z1[i+1]).value**2) for i in range(len(dist_streamer)-1)]) * u.au
-time_integral_path = np.zeros(len(dist_streamer)) * u.yr
-
-for i in reversed(range(len(vel_streamer)-1)):
-    # time to the rc is 0
-    t = time_integral_path[i+1]
-    deltat = (deltas[i]/ vel_streamer[i+1]).to(u.yr)
-    time_integral_path[i] = t + deltat
+dist_streamer = np.sqrt(x1**2+y1**2+z1**2) # distance from protostar to point
+dist_projected = np.sqrt(x1**2+z1**2) # distance from protostar to point in the sky
+vel_streamer = np.sqrt(vx1**2+vy1**2+vz1**2) # velocity at point x,y,z
+# we calculate the size of each segment and the time to travel the streamer
+dx1 = np.roll(x1,1) - x1
+dy1 = np.roll(y1,1) - y1
+dz1 = np.roll(z1,1) - z1
+deltas = np.sqrt(dx1**2 + dy1**2 + dz1**2)
+deltat = (deltas / vel_streamer).to(u.yr)
+# we reverse two times to sum from protostar to start point and return the
+# array to its original order
+time_integral_path = np.roll(np.flip(np.cumsum(np.flip(deltat))),-1)
+time_integral_path[len(time_integral_path)-1] = 0. * u.yr
 
 radiuses = np.arange(0.,3200., binsize) # list of projected lengths we want to sample
-# binradii = np.arange(binsize/2,3300.,binsize) # u.AU  of the streamer length
-binradii = np.zeros(len(radiuses)-1) * u.AU
+binradii = np.zeros(len(radiuses)-1) * u.AU # length of the streamer in bin
 masses = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 masseskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
-# masses = np.zeros(len(binradii)) * u.Msun
-# masseskink = np.zeros(len(binradii)) * u.Msun
-times = np.zeros((len(binradii),2)) * u.yr
-# m_acclist = np.zeros((len(binradii),2)) * u.Msun / u.yr
-# m_acclistkink = np.zeros((len(binradii),2)) * u.Msun / u.yr
+times = np.zeros(len(binradii)) * u.yr
 m_acclist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 m_acclistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 radius3Dmap = np.zeros(np.shape(mom0)) * np.nan
-
 
 mass_streamer_table['2D bin minimum (au)'] = radiuses[:len(radiuses)-1]
 mass_streamer_table['2D bin maximum (au)'] = radiuses[1:]
@@ -375,22 +371,15 @@ for i in range(len(radiuses)-1):
     masseskink[i] = M_hydrogen2(NH2totkink, mu_H2, distance, deltara, deltadec)
     # times[i] = t_freefall(binradii[i], Mstar)
     times[i] = np.mean(streamer_times)
-    m_acclist[i] = masses[i] / times[i,1].value
-    m_acclistkink[i] = masseskink[i] / times[i,1].value
-# indexnans = np.where(np.isnan(unumpy.nominal_values(mom0kink)))
-# radius3Dmap[indexnans] = np.nan
-# if not os.path.exists(radius3Dmapname):
-#     radius3Dheader = NC18Oheader.copy()
-#     radius3Dheader['bunit'] = 'au'
-#     hdu = fits.PrimaryHDU(data=radius3Dmap, header=radius3Dheader)
-#     hdu.writeto(radius3Dmapname)
+    m_acclist[i] = masses[i] / times[i].value
+    m_acclistkink[i] = masseskink[i] / times[i].value
 
 mass_streamer_table['3D distance (au)'] = binradii
 mass_streamer_table['Mass wo kink (Msun)'] = unumpy.nominal_values(masses)
 mass_streamer_table['u Mass wo kink (Msun)'] = unumpy.std_devs(masses)
 mass_streamer_table['Mass w kink (Msun)'] = unumpy.nominal_values(masseskink)
 mass_streamer_table['u Mass w kink (Msun)'] = unumpy.std_devs(masseskink)
-mass_streamer_table['t_ff (yr, M_env = 0.39 Msun)'] = times[:,1]
+mass_streamer_table['t_f (yr, M_env = 0.39 Msun)'] = times
 mass_streamer_table['Mdot wo kink (Msun yr-1)'] = unumpy.nominal_values(m_acclist)
 mass_streamer_table['u Mdot wo kink (Msun yr-1)'] = unumpy.std_devs(m_acclist)
 mass_streamer_table['Mdot w kink (Msun yr-1)'] = unumpy.nominal_values(m_acclistkink)

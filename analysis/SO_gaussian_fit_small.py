@@ -212,7 +212,7 @@ fitregionfile = 'SO_2G_fitregion.reg'
 regionlist = regions.read_ds9(fitregionfile)
 region_sample = regionlist[0].to_pixel(wcscel)
 region_mask = region_sample.to_mask().to_image((leny, lenx))
-region_sample.width
+
 
 # we load the fitcube
 fitcube = fits.getdata(fitcubefile)[0:3]

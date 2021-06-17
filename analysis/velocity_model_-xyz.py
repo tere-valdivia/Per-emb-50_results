@@ -25,11 +25,11 @@ since correcting the angles, not ran again
 # Main parameters to generate a streamline
 # The mass is currently in testing
 M_s = 1.71*u.Msun # was 2.9
-# M_env = 0.18*u.Msun # within 3500 au is 0.18, was 2.2
-M_env = 0.39*u.Msun
+# M_env = 0.18*u.Msun # lower limit
+M_env = 0.39*u.Msun # upper limit
 M_disk = 0.58*u.Msun
 # Mstar = (M_s+M_env+M_disk)
-Mstar = 8.3 *u.Msun
+Mstar = 8.3 *u.Msun # test for
 # Disk inclination system
 # inc = -(90-67) * u.deg
 # PA_ang = (170+90)*u.deg

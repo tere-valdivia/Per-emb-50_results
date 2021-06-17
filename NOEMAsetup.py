@@ -3,7 +3,8 @@ import numpy as np
 from astropy.io import fits
 import matplotlib as mpl
 from matplotlib import rc
-from astropy.constants import c, h, k_B, m_p
+from astropy.constants import c, h, k_B, m_p, G
+from uncertainties import ufloat, umath
 
 mpl.rcParams['xtick.direction'] = 'in'
 mpl.rcParams['ytick.direction'] = 'in'
@@ -157,3 +158,71 @@ def per_emb_50_get_vc_r(velfield_file, region_file):
     v_los = Vc_cutout[gd]*u.km/u.s
     r_proj = rad_cutout[gd]
     return r_proj, v_los
+
+def t_freefall(r, M):
+    '''
+    r must be a AU Quantity
+    M must be a M_sun Quantity
+    Returns free-fall time in yr Quantity
+    '''
+    t= np.sqrt((r)**3/(G * M)).decompose().to(u.yr) * np.pi/(np.sqrt(2)*2)
+    return t
+
+def t_freefall_acc(r_fin, r_init, r0, mass=1*u.Msun):
+  """
+  Returns the freefall timescale along a path in yr
+
+  Based on t_freefall, we calculate the integral between r0 and r
+  This equation considers that v_r in r_init is 0, and the velocity is
+  non-zero in the inner points
+  r_fin is the array between 0 and r' \leq r0
+  """
+  eps_fin = (r_fin/r0).value
+  eps_init = (r_init/r0).value
+  theta_fin = np.arcsin(np.sqrt(eps_fin))
+  theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
+  integral = np.sqrt(r0**3/(2 * G * mass)) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
+  return integral.to(u.yr)
+
+
+def t_freefall_acc_unumpy(r_fin, r_init, r0, mass):
+  """
+  Returns the freefall timescale along a path in yr
+
+  Based on t_freefall, we calculate the integral between r0 and r
+  This equation considers that v_r in r_init is 0, and the velocity is
+  non-zero in the inner points
+  r_fin is the array between 0 and r' \leq r0
+
+  Optimized for unumpy
+  """
+  eps_fin = (r_fin/r0).value
+  eps_init = (r_init/r0).value
+  theta_fin = np.arcsin(np.sqrt(eps_fin))
+  theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
+  constant = np.sqrt(r0**3/(2 * G)).to(u.yr * (u.Msun)**(1/2))
+  integral = constant.value / umath.sqrt(mass) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
+  return integral
+
+
+def M_hydrogen2(N, mu, D, deltara, deltadec):
+    """
+    Returns the gas mass of molecular hydrogen, given the sum of column density
+    N in cm-2 Npix.
+
+    Requires N to be in cm-2 but without unit. Returns in solar masses
+
+    Args:
+        N (ndarray): sum of the column densities in cm-2 Npix
+        mu (float): molecular weight of the hydrogen atom
+        D (Quantity (pc)): distance to the source
+        deltara, deltadec (float): size of the pixel in radians
+    Returns:
+        mass (float): total mass in solar masses
+
+    """
+    preamble = (mu * m_p) * (D**2) * np.abs(deltara * deltadec)
+    Mass = N * preamble.value
+    Mass_unit = ((1. * u.cm**(-2) * preamble.unit).to(u.Msun)).value
+    # return Mass.to(u.Msun)
+    return Mass * Mass_unit

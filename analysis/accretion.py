@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 Important functions
 '''
 
-
 def distance_pix(x0, y0, x, y):
     dis = np.sqrt((x-x0)**2 + (y-y0)**2)
     return dis
@@ -56,7 +55,7 @@ Inputs
 '''
 Tex_u = ufloat(15, 5)
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
-tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_binned_unc_tmodel.csv'.format(formatname)
+tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_rolledbin_unc_tmodel.csv'.format(formatname)
 modelname = 'H2CO_0.39Msun_env'
 fileinpickle = 'streamer_model_'+modelname+'_params'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
@@ -165,11 +164,13 @@ time_theory = t_freefall_acc(0 * u.au, dist_mean, r0, mass=Mstar)
 # Now, we separate the streamer in bins
 # for the streamer-calculated distances
 # TODO: Implement the rolling average to sample the full streamer
-radiuses = np.arange(0., 3200., binsize)  # list of projected lengths we want to sample
-binradii = np.zeros(len(radiuses)-1) * u.AU  # length of the streamer in bin
-binradiierr = np.zeros(len(radiuses)-1) * u.AU
-binradiikink = np.zeros(len(radiuses)-1) * u.AU
-binradiikinkerr = np.zeros(len(radiuses)-1) * u.AU
+radiuses = np.arange(0., 3200.-binsize, binsize/2)  # list of projected lengths we want to sample
+radiuses2 = np.arange(binsize, 3200., binsize/2)
+
+binradii = np.zeros(len(radiuses)) * u.AU  # length of the streamer in bin
+binradiierr = np.zeros(len(radiuses)) * u.AU
+binradiikink = np.zeros(len(radiuses)) * u.AU
+binradiikinkerr = np.zeros(len(radiuses)) * u.AU
 masses = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 masseskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 # times = np.zeros(len(binradii)) * u.yr
@@ -179,14 +180,14 @@ times_theory = np.zeros(len(binradii)) * u.yr
 m_acclist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 m_acclistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 
-mass_streamer_table['2D bin minimum (au)'] = radiuses[:len(radiuses)-1]
-mass_streamer_table['2D bin maximum (au)'] = radiuses[1:]
-mask = np.where((distance_map > radiuses[0]) & (distance_map < radiuses[1]) & ~np.isnan(unumpy.nominal_values(NH2map)))
-for i in range(len(radiuses)-1):
+mass_streamer_table['2D bin minimum (au)'] = radiuses
+mass_streamer_table['2D bin maximum (au)'] = radiuses2
+
+for i in range(len(radiuses)):
     # we want to make a map of the bins, so we need to save the indexes
     # of the map positions
-    mask = np.where((distance_map > radiuses[i]) & (distance_map < radiuses[i+1]) & ~np.isnan(unumpy.nominal_values(NH2map)))
-    maskkink = np.where((distance_map > radiuses[i]) & (distance_map < radiuses[i+1]) & ~np.isnan(unumpy.nominal_values(NH2mapkink)))
+    mask = np.where((distance_map > radiuses[i]) & (distance_map < radiuses2[i]) & ~np.isnan(unumpy.nominal_values(NH2map)))
+    maskkink = np.where((distance_map > radiuses[i]) & (distance_map < radiuses2[i]) & ~np.isnan(unumpy.nominal_values(NH2mapkink)))
     weight_map = NH2map[mask]  # recall these have uncertainties
     weight_mapkink = NH2mapkink[maskkink]
     centerz, centerx = mass_center(mask, weight_map)
@@ -194,7 +195,7 @@ for i in range(len(radiuses)-1):
     # streamer distances within these bin of projected distances
     # indexbin is for the array of the streamer
     indexbin = np.where((dist_projected_mean.value > radiuses[i]) & (
-        dist_projected_mean.value < radiuses[i+1]))
+        dist_projected_mean.value < radiuses2[i]))
     streamer_distances = dist_mean[indexbin]
     streamer_times = time_integral_path[indexbin]
     streamer_times_theory = time_theory[indexbin]
@@ -214,6 +215,7 @@ for i in range(len(radiuses)-1):
     binradiikink[i] = streamer_distances[indexsolkink]
     binradiikinkerr[i] = np.abs(streamer_distances[indexsolkink] - streamer_distances[indexsolkinkerr]) if indexsolkink != indexsolkinkerr else deltar
     # times[i] = streamer_times[indexsol]
+
     timeserr = np.amax([np.abs(streamer_times[indexsol] - streamer_times[indexsolerr]).value, np.abs(streamer_times[indexsol] - streamer_times[indexsol+1]).value])
     times[i] = ufloat(streamer_times[indexsol].value, timeserr)
     timeskinkerr = np.amax([np.abs(streamer_times[indexsolkink] - streamer_times[indexsolkinkerr]).value, np.abs(streamer_times[indexsolkink] - streamer_times[indexsolkink+1]).value])

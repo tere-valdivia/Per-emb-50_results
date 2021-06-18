@@ -101,7 +101,7 @@ NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
 uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
 NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 # constants
-rms = 2.4041 * u.K * u.km/u.s
+rms = 0.223 * u.K * u.km/u.s
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -129,6 +129,7 @@ yy, xx = np.mgrid[0:leny, 0:lenx]
 # we need a map of the primary beam response to calculate the unc. properly
 beamresponse = Gaussian2D(amplitude=1, x_mean=ra0_pix, y_mean=dec0_pix, x_stddev=primbeamFWHM/2.35/(
     deltadec*u.rad).to(u.deg).value, y_stddev=primbeamFWHM/2.35/(deltadec*u.rad).to(u.deg).value)(xx, yy)
+assert np.shape(beamresponse) == np.shape(mom0)
 u_mom0 = rms / beamresponse
 mom0 = unumpy.uarray(mom0.value, u_mom0.value)  # they cannot be with units
 mom0kink = fits.getdata(filenameC18Okink+'.fits') * u.K * u.km/u.s
@@ -147,6 +148,7 @@ NC18Oheader['bunit'] = 'cm-2'
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
 
 NC18O = N_C18O_21(mom0, B0, Tex_u)
+
 if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(formatname))

@@ -34,7 +34,6 @@ def distance_physical(ra0, dec0, ra, dec, header):
     dist = dist_deg.value * dist_Per50  # pc * deg = au
     return dist
 
-
 def mass_center(grid, weights):
     '''
     grid should be size (2, ny*nx)
@@ -49,7 +48,15 @@ def mass_center(grid, weights):
     centerx = np.nansum(valuegridx) / totalweight
     return centery, centerx
 
-
+def M_hydrogen2_unumpy(N, mu, D, deltara, deltadec):
+    '''
+    D must be in cm
+    '''
+    preamble = (mu * m_p) * np.abs(deltara * deltadec)
+    Mass = N * (D**2) * preamble.value
+    Mass_unit = ((1. * preamble.unit).to(u.Msun)).value
+    # return Mass.to(u.Msun)
+    return Mass * Mass_unit
 '''
 Inputs
 '''
@@ -67,7 +74,8 @@ radius3Dmapname = 'column_dens_maps/distance_3D_map.fits'
 radiusmapname = 'column_dens_maps/distance_2D_map.fits'
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
-distance = (dist_Per50 * u.pc).to(u.cm)
+# distance = (dist_Per50 * u.pc).to(u.cm)
+distance = ufloat((dist_Per50 * u.pc).to(u.cm).value, (22*u.pc).to(u.cm).value)
 mu_H2 = 2.7
 # Texlist = np.array([10,11,12,13,14,15])* u.K
 # B0 = (54891.420 * u.MHz).to(1/u.s)
@@ -151,6 +159,8 @@ dist_mean = 0.5 * (np.roll(dist_streamer, 1) + dist_streamer)[1:]
 dist_projected_mean = 0.5 * (np.roll(dist_projected, 1) + dist_projected)[1:]
 deltat = (deltas / vel_mean).to(u.yr)
 
+
+plt.plot(dist_mean, deltat)
 # usually we need to sacrifice the first two points: the first because of the
 # roll and the second because of the initial v=0. At this point is important
 # to check how many points we need to leave out, specially with omega0 close
@@ -179,7 +189,9 @@ timeskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 times_theory = np.zeros(len(binradii)) * u.yr
 m_acclist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 m_acclistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
-
+# TODO: calcular deltaM/deltat de cada bin, porque tiene mas sentido para
+# comparar con la tasa de 
+deltatlist = np.zeros(len(radiuses)) * u.AU
 mass_streamer_table['2D bin minimum (au)'] = radiuses
 mass_streamer_table['2D bin maximum (au)'] = radiuses2
 
@@ -226,8 +238,8 @@ for i in range(len(radiuses)):
     NH2tot = np.sum(weight_map)
     NH2totkink = np.sum(weight_mapkink)
 
-    masses[i] = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
-    masseskink[i] = M_hydrogen2(NH2totkink, mu_H2, distance, deltara, deltadec)
+    masses[i] = M_hydrogen2_unumpy(NH2tot, mu_H2, distance, deltara, deltadec)
+    masseskink[i] = M_hydrogen2_unumpy(NH2totkink, mu_H2, distance, deltara, deltadec)
 
     m_acclist[i] = masses[i] / times[i]
     m_acclistkink[i] = masseskink[i] / timeskink[i]

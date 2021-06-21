@@ -168,6 +168,16 @@ def t_freefall(r, M):
     t= np.sqrt((r)**3/(G * M)).decompose().to(u.yr) * np.pi/(np.sqrt(2)*2)
     return t
 
+def t_freefall_unumpy(r, M):
+    '''
+    r must be a AU Quantity
+    M must be a M_sun ufloat (no quantity)
+    Returns free-fall time in yr
+    '''
+    preamble = np.sqrt((r)**3/(G)).decompose().to(u.yr*u.Msun**(1./2))
+    t = preamble.value / umath.sqrt(M) * np.pi/(np.sqrt(2)*2)
+    return t
+
 def t_freefall_acc(r_fin, r_init, r0, mass=1*u.Msun):
   """
   Returns the freefall timescale along a path in yr

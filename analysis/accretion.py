@@ -60,9 +60,11 @@ def M_hydrogen2_unumpy(N, mu, D, deltara, deltadec):
 '''
 Inputs
 '''
-Tex_u = ufloat(15, 5)
-formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
-tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_rolledbin_unc_tmodel.csv'.format(formatname)
+# Tex_u = ufloat(15, 5)
+Tex_u = 15
+# formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
+formatname = str(int(Tex_u))
+tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_rolledbin_unc_tmodel_nodist.csv'.format(formatname)
 modelname = 'H2CO_0.39Msun_env'
 fileinpickle = 'streamer_model_'+modelname+'_params'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
@@ -74,11 +76,9 @@ radius3Dmapname = 'column_dens_maps/distance_3D_map.fits'
 radiusmapname = 'column_dens_maps/distance_2D_map.fits'
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
-# distance = (dist_Per50 * u.pc).to(u.cm)
-distance = ufloat((dist_Per50 * u.pc).to(u.cm).value, (22*u.pc).to(u.cm).value)
+distance = (dist_Per50 * u.pc).to(u.cm).value
+# distance = ufloat((dist_Per50 * u.pc).to(u.cm).value, (22*u.pc).to(u.cm).value)
 mu_H2 = 2.7
-# Texlist = np.array([10,11,12,13,14,15])* u.K
-# B0 = (54891.420 * u.MHz).to(1/u.s)
 binsize = 360  # au
 deltar = 10*u.au  # sample size for the streamline model
 
@@ -159,8 +159,6 @@ dist_mean = 0.5 * (np.roll(dist_streamer, 1) + dist_streamer)[1:]
 dist_projected_mean = 0.5 * (np.roll(dist_projected, 1) + dist_projected)[1:]
 deltat = (deltas / vel_mean).to(u.yr)
 
-
-plt.plot(dist_mean, deltat)
 # usually we need to sacrifice the first two points: the first because of the
 # roll and the second because of the initial v=0. At this point is important
 # to check how many points we need to leave out, specially with omega0 close
@@ -169,11 +167,9 @@ plt.plot(dist_mean, deltat)
 # we reverse two times to sum from protostar to start point and return the
 # array to its original order
 time_integral_path = np.flip(np.cumsum(np.flip(deltat))).to(u.yr)
-time_theory = t_freefall_acc(0 * u.au, dist_mean, r0, mass=Mstar)
 
 # Now, we separate the streamer in bins
 # for the streamer-calculated distances
-# TODO: Implement the rolling average to sample the full streamer
 radiuses = np.arange(0., 3200.-binsize, binsize/2)  # list of projected lengths we want to sample
 radiuses2 = np.arange(binsize, 3200., binsize/2)
 
@@ -186,12 +182,11 @@ masseskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 # times = np.zeros(len(binradii)) * u.yr
 times = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 timeskink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
-times_theory = np.zeros(len(binradii)) * u.yr
-m_acclist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
-m_acclistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
+m_inlist = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
+m_inlistkink = unumpy.uarray(np.zeros(len(binradii)), np.zeros(len(binradii)))
 # TODO: calcular deltaM/deltat de cada bin, porque tiene mas sentido para
-# comparar con la tasa de 
-deltatlist = np.zeros(len(radiuses)) * u.AU
+# comparar con la tasa de acrecion
+deltatlist = np.zeros(len(radiuses)) * u.yr
 mass_streamer_table['2D bin minimum (au)'] = radiuses
 mass_streamer_table['2D bin maximum (au)'] = radiuses2
 
@@ -211,6 +206,7 @@ for i in range(len(radiuses)):
     streamer_distances = dist_mean[indexbin]
     streamer_times = time_integral_path[indexbin]
     streamer_times_theory = time_theory[indexbin]
+    deltat_bin = deltat[indexbin]
     xs = xstream[indexbin]
     zs = zstream[indexbin]
 
@@ -233,16 +229,16 @@ for i in range(len(radiuses)):
     timeskinkerr = np.amax([np.abs(streamer_times[indexsolkink] - streamer_times[indexsolkinkerr]).value, np.abs(streamer_times[indexsolkink] - streamer_times[indexsolkink+1]).value])
     timeskink[i] = ufloat(streamer_times[indexsolkink].value, timeskinkerr)
 
-    times_theory[i] = streamer_times_theory[indexsol]
-
     NH2tot = np.sum(weight_map)
     NH2totkink = np.sum(weight_mapkink)
 
     masses[i] = M_hydrogen2_unumpy(NH2tot, mu_H2, distance, deltara, deltadec)
     masseskink[i] = M_hydrogen2_unumpy(NH2totkink, mu_H2, distance, deltara, deltadec)
 
-    m_acclist[i] = masses[i] / times[i]
-    m_acclistkink[i] = masseskink[i] / timeskink[i]
+    deltatlist[i] = np.sum(deltat_bin)
+
+    m_inlist[i] = masses[i] / deltatlist[i].value
+    m_inlistkink[i] = masseskink[i] / deltatlist[i].value
 
 mass_streamer_table['3D distance (au)'] = binradii
 mass_streamer_table['u 3D distance (au)'] = binradiierr
@@ -256,10 +252,10 @@ mass_streamer_table['t_ff streamline (yr, M_env = 0.39 Msun)'] = unumpy.nominal_
 mass_streamer_table['u t_ff streamline (yr, M_env = 0.39 Msun)'] = unumpy.std_devs(times)
 mass_streamer_table['t_ff streamline kink (yr, M_env = 0.39 Msun)'] = unumpy.nominal_values(timeskink)
 mass_streamer_table['u t_ff streamline kink (yr, M_env = 0.39 Msun)'] = unumpy.std_devs(timeskink)
-mass_streamer_table['t_ff theory (yr, M_env = 0.39 Msun)'] = times_theory
-mass_streamer_table['Mdot wo kink (Msun yr-1)'] = unumpy.nominal_values(m_acclist)
-mass_streamer_table['u Mdot wo kink (Msun yr-1)'] = unumpy.std_devs(m_acclist)
-mass_streamer_table['Mdot w kink (Msun yr-1)'] = unumpy.nominal_values(m_acclistkink)
-mass_streamer_table['u Mdot w kink (Msun yr-1)'] = unumpy.std_devs(m_acclistkink)
+mass_streamer_table['deltat_ff streamline (yr, M_env = 0.39 Msun)'] = deltatlist.value
+mass_streamer_table['Mdot_in wo kink (Msun yr-1)'] = unumpy.nominal_values(m_inlist)
+mass_streamer_table['u Mdot_in wo kink (Msun yr-1)'] = unumpy.std_devs(m_inlist)
+mass_streamer_table['Mdot_in w kink (Msun yr-1)'] = unumpy.nominal_values(m_inlistkink)
+mass_streamer_table['u Mdot_in w kink (Msun yr-1)'] = unumpy.std_devs(m_inlistkink)
 if not os.path.exists(tablefilemacc):
     mass_streamer_table.to_csv(tablefilemacc)

@@ -78,8 +78,7 @@ def N_C18O_21(TdV, B0, Tex, f=1):
     '''
     nu = 219560.3541 * u.MHz
     constant = 3. * h / (8.*np.pi**3 * (1.1079e-19 * u.esu * u.cm)**2 * 2./5.)
-    Eu = 15.81  # K
-    preamble = constant.value * Qrot(B0, Tex)/5. * umath.exp(Eu/Tex) / \
+    preamble = constant.value * Qrot(B0, Tex)/5. * umath.exp(15.81/Tex) / \
         (umath.exp(10.54/Tex) - 1.) * 1. / (J_nu(nu, Tex) - J_nu(nu, 2.73))
     NC18O = preamble * TdV / f
     N_unit = (1. * constant.unit * u.km / u.s).to(u.cm**(-2)).value
@@ -92,8 +91,8 @@ Inputs
 # filenames
 filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
 filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
-tablefile = 'M_H2_Tex_fixed_mom0_pbcor_unc.csv'
-tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink_unc.csv'
+# tablefile = 'M_H2_Tex_fixed_mom0_pbcor_unc.csv'
+# tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink_unc.csv'
 tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc.csv'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
@@ -101,7 +100,8 @@ NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
 uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
 NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 # constants
-rms = 0.223 * u.K * u.km/u.s
+rms = 0.40993961429269554 * u.K * u.km/u.s
+# The rms of the cube between 5.5 and 9.5 km/s is 0.41823096924675096 K
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
@@ -109,7 +109,8 @@ mu_H2 = 2.7
 B0 = (54891.420 * u.MHz).to(1/u.s)
 # You can use an array of temps or a ufloat
 Texlist = np.array([10, 11, 12, 13, 14, 15]) * u.K
-Tex_u = ufloat(15, 5)
+Tex_u = ufloat(15., 5.)
+# Tex_u = 15.
 '''
 End inputs
 '''
@@ -124,6 +125,7 @@ ra0_pix, dec0_pix = wcsmom.celestial.all_world2pix(ra_Per50.value, dec_Per50.val
 
 # We obtain the Tdv and its shape to do a grid
 mom0 = fits.getdata(filenameC18O+'.fits') * u.K * u.km/u.s
+mom0kink = fits.getdata(filenameC18Okink+'.fits') * u.K * u.km/u.s
 leny, lenx = np.shape(mom0)
 yy, xx = np.mgrid[0:leny, 0:lenx]
 # we need a map of the primary beam response to calculate the unc. properly
@@ -131,21 +133,27 @@ beamresponse = Gaussian2D(amplitude=1, x_mean=ra0_pix, y_mean=dec0_pix, x_stddev
     deltadec*u.rad).to(u.deg).value, y_stddev=primbeamFWHM/2.35/(deltadec*u.rad).to(u.deg).value)(xx, yy)
 assert np.shape(beamresponse) == np.shape(mom0)
 u_mom0 = rms / beamresponse
+u_mom0kink = np.where(np.isnan(mom0kink), np.nan, u_mom0)
+u_mom0[np.where(np.isnan(mom0))] = np.nan * u_mom0.unit
 mom0 = unumpy.uarray(mom0.value, u_mom0.value)  # they cannot be with units
-mom0kink = fits.getdata(filenameC18Okink+'.fits') * u.K * u.km/u.s
-mom0kink = unumpy.uarray(mom0kink.value, u_mom0.value)
+mom0kink = unumpy.uarray(mom0kink.value, u_mom0kink.value)
+
 
 # this time is just to do a quick estimate of accretion timescale using t_ff
-M_s = 1.71*u.Msun
-M_env = np.array([0.18, 0.39])*u.Msun
-M_disk = 0.58*u.Msun
-Mstar = (M_s+M_env+M_disk)
-t_ff = t_freefall(3300*u.AU, Mstar)
+# M_s = 1.71 * u.Msun
+M_s = ufloat(1.71, 0.19)
+# M_env = 0.39 * u.Msun
+M_env = ufloat(0.285, 0.105)
+M_disk = 0.58 #* u.Msun
+Mstar = (M_s + M_env + M_disk)
+
+t_ff = t_freefall_unumpy(3300*u.AU, Mstar)
 
 NC18Oheader['bunit'] = 'cm-2'
 
 # Here we calculate one single map with T = 15pm5 K
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
+# formatname = str(int(Tex_u))
 
 NC18O = N_C18O_21(mom0, B0, Tex_u)
 
@@ -179,17 +187,19 @@ else:
         results_mass_unumpy.loc[index, 'Max NC18O (cm-2)'] = np.nanmax(map).n
         NH2 = map * X_C18O
         NH2tot = np.nansum(NH2)
+        print(NH2tot)
         MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
         results_mass_unumpy.loc[index, 'M (M_sun)'] = MH2.n
         results_mass_unumpy.loc[index, 'u M (M_sun)'] = MH2.s
-        results_mass_unumpy.loc[index, 'M_acc (M_sun/yr) (M_star=0.39Msun)'] = MH2.n/t_ff[1].value
-        results_mass_unumpy.loc[index, 'u M_acc (M_sun/yr)'] = MH2.s/t_ff[1].value
+        dotM = MH2/t_ff
+        results_mass_unumpy.loc[index, 'dotM_in (M_sun/yr) (M_star=0.39Msun)'] = dotM.n
+        results_mass_unumpy.loc[index, 'u dotM_in (M_sun/yr)'] = dotM.s
         Nsum = np.nansum(map)
         results_mass_unumpy.loc[index, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
         results_mass_unumpy.loc[index, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
 
     results_mass_unumpy.to_csv(tablefile_unumpy.format(formatname))
-
+print(results_mass_unumpy[['Sum NC18O (cm-2 Npx)', 'u Sum NC18O (cm-2 Npx)']])
 # change this part of the code to work with the new functions
 # Here we calculate the NC18O map and statistics with Tex with no errors
 

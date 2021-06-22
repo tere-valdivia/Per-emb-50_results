@@ -5,6 +5,7 @@ import matplotlib as mpl
 from matplotlib import rc
 from astropy.constants import c, h, k_B, m_p, G
 from uncertainties import ufloat, umath
+import scipy.integrate as integrate
 
 mpl.rcParams['xtick.direction'] = 'in'
 mpl.rcParams['ytick.direction'] = 'in'
@@ -179,40 +180,58 @@ def t_freefall_unumpy(r, M):
     return t
 
 def t_freefall_acc(r_fin, r_init, r0, mass=1*u.Msun):
-  """
-  Returns the freefall timescale along a path in yr
+    """
+    Returns the freefall timescale along a path in yr
 
-  Based on t_freefall, we calculate the integral between r0 and r
-  This equation considers that v_r in r_init is 0, and the velocity is
-  non-zero in the inner points
-  r_fin is the array between 0 and r' \leq r0
-  """
-  eps_fin = (r_fin/r0).value
-  eps_init = (r_init/r0).value
-  theta_fin = np.arcsin(np.sqrt(eps_fin))
-  theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
-  integral = np.sqrt(r0**3/(2 * G * mass)) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
-  return integral.to(u.yr)
+    Based on t_freefall, we calculate the integral between r0 and r
+    This equation considers that v_r in r_init is 0, and the velocity is
+    non-zero in the inner points
+    r_fin is the array between 0 and r' \leq r0
+    """
+    eps_fin = (r_fin/r0).value
+    eps_init = (r_init/r0).value
+    theta_fin = np.arcsin(np.sqrt(eps_fin))
+    theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
+    integral = np.sqrt(r0**3/(2 * G * mass)) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
+    return integral.to(u.yr)
 
+def t_freefall_acc_v0(r_fin, r_init, r0, v0=0*u.km/u.s, mass=1*u.Msun):
+    """
+    Returns the freefall timescale along a path in yr
+
+    Based on t_freefall, we calculate the integral between r0 and r
+    This equation considers that v_r in r_init is non-zero, and the velocity is
+    non-zero in the inner points as well
+    r_fin is the array between 0 and r' \leq r0
+
+    This is the numerical integration. It uses scipy.integrate.quad
+    """
+    r0_m = r0.to(u.m).value
+    def delta_t_int(x):
+        return -1. / np.sqrt((v0.to(u.m/u.s).value)**2 + 2 * G.value * mass.to(u.kg).value * (1/x-1/r0_m))
+    r1 = r_init.to(u.m).value # lower limit of integral
+    r2 = r_fin.to(u.m).value
+    integral, _ = integrate.quad(delta_t_int, r1, r2)
+    return (integral*u.s).to(u.yr)
 
 def t_freefall_acc_unumpy(r_fin, r_init, r0, mass):
-  """
-  Returns the freefall timescale along a path in yr
+    """
+    Returns the freefall timescale along a path in yr
 
-  Based on t_freefall, we calculate the integral between r0 and r
-  This equation considers that v_r in r_init is 0, and the velocity is
-  non-zero in the inner points
-  r_fin is the array between 0 and r' \leq r0
+    Based on t_freefall, we calculate the integral between r0 and r
+    This equation considers that v_r in r_init is 0, and the velocity is
+    non-zero in the inner points
+    r_fin is the array between 0 and r' \leq r0
 
-  Optimized for unumpy
-  """
-  eps_fin = (r_fin/r0).value
-  eps_init = (r_init/r0).value
-  theta_fin = np.arcsin(np.sqrt(eps_fin))
-  theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
-  constant = np.sqrt(r0**3/(2 * G)).to(u.yr * (u.Msun)**(1/2))
-  integral = constant.value / umath.sqrt(mass) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
-  return integral
+    Optimized for unumpy
+    """
+    eps_fin = (r_fin/r0).value
+    eps_init = (r_init/r0).value
+    theta_fin = np.arcsin(np.sqrt(eps_fin))
+    theta_init = np.arcsin(np.sqrt(eps_init)) #np.pi/2 #  arcsin(1) = np.pi/2
+    constant = np.sqrt(r0**3/(2 * G)).to(u.yr * (u.Msun)**(1/2))
+    integral = constant.value / umath.sqrt(mass) * ((theta_init - np.sin(theta_init) * np.cos(theta_init)) - (theta_fin - np.sin(theta_fin) * np.cos(theta_fin)))
+    return integral
 
 
 def M_hydrogen2(N, mu, D, deltara, deltadec):

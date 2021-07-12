@@ -234,6 +234,35 @@ def t_freefall_acc_unumpy(r_fin, r_init, r0, mass):
     return integral
 
 
+def N_C18O_21(TdV, B0, Tex, f=1, nu=219560.3541 * u.MHz):
+    '''
+    Returns the column density of C18O based on the J=2-1 transition
+
+    To check if the constant is ok, I calculated the constant for J=1-0,
+    obtained the same as for the example in Mangum + Shirrley 2015 and applied
+    the same method with the different values of Eu, J and nu
+
+    This is equivalent to combining equations 10 and 12 from Nishimura et al
+    2015 using the optically thin limit (checked). The constant of equation 10
+    is the same constant we get here divided by k_b/hB0 and multiplied by
+    2J+1 = 5
+
+    TdVin must be in K km/s, but must not be a Quantity, but a ufloat
+    Tex must be in K, but must not be a Quantity, but a ufloat
+
+    The returned column density has units of cm-2 but is no Quantity,
+    so that it can be used with the uncertainties package
+    changed the np.exp to umath.exp
+    '''
+    constant = 3. * h / (8.*np.pi**3 * (1.1079e-19 * u.esu * u.cm)**2 * 2./5.)
+    preamble = constant.value * Qrot(B0, Tex)/5. * umath.exp(15.81/Tex) / \
+        (umath.exp(10.54/Tex) - 1.) * 1. / (J_nu(nu, Tex) - J_nu(nu, 2.73))
+    NC18O = preamble * TdV / f
+    N_unit = (1. * constant.unit * u.km / u.s).to(u.cm**(-2)).value
+    return NC18O * N_unit
+
+
+
 def M_hydrogen2(N, mu, D, deltara, deltadec):
     """
     Returns the gas mass of molecular hydrogen, given the sum of column density

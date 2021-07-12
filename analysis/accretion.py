@@ -259,3 +259,8 @@ mass_streamer_table['Mdot_in w kink (Msun yr-1)'] = unumpy.nominal_values(m_inli
 mass_streamer_table['u Mdot_in w kink (Msun yr-1)'] = unumpy.std_devs(m_inlistkink)
 if not os.path.exists(tablefilemacc):
     mass_streamer_table.to_csv(tablefilemacc)
+
+NH2tot = np.nansum(NH2mapkink)
+MH2tot = M_hydrogen2_unumpy(NH2tot, mu_H2, distance, deltara, deltadec)
+timetot = time_integral_path[0].value
+print(MH2tot/timetot)

@@ -1,5 +1,6 @@
 
 '''
+For SO:
 We have fitted 3 gaussian components in the region we call fitcube 2g.
 We have fitted only one gaussian component for the whole map (called small)
 To get the streamer component and kink, we select the parts of the map which
@@ -7,7 +8,7 @@ have sigma<0.8 and velo<7.5 km/s
 Then we insert the central part to the whole map
 
 '''
-
+import os
 import numpy as np
 import pyspeckit
 from astropy.wcs import WCS
@@ -23,13 +24,18 @@ fitfile1aicres = cubefile + '_1G_fitparams_aicres.fits'
 fitfile2aicres = cubefile + '_2G_fitparams_aicres.fits'
 fitfile3aicres = cubefile + '_3G_fitparams_aicres.fits'
 cube = SpectralCube.read(cubefile+'_fitcube2g_K.fits')
+
 streamersavename = '../SO_55_44/CDconfigsmall/streamer_component_123G_corrected_0.8kms.pdf'
 fitstreamfile = cubefile+'_gaussian_streamer_model.fits'
 cubetotalfile = '../SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
 fittotalfile = cubetotalfile + '_gaussian_streamer_kink_model.fits'
 dispersionmax = 0.8
 
+rotsavename = '../SO_55_44/CDconfigsmall/rotation_component_123G.pdf'
+fitrotfile = cubefile+'_gaussian_rotation_model.fits'
+dispersionminrot = 0.3
 
+# separation of streamer component
 if os.path.exists(fitstreamfile):
     map_sigma = fits.getdata(fitstreamfile)
     header = fits.getheader(fitstreamfile)
@@ -112,6 +118,100 @@ else:
 
     map_sigma[np.where(np.repeat([filter], 6, axis=0))]  = np.nan
 
+if not os.path.exists(streamersavename):
+    labelx = 'Right Ascension (J2000)'
+    labely = 'Declination (J2000)'
+    cmap = plt.cm.RdYlBu_r
+    cmap_inferno = plt.cm.inferno
+    cmap.set_bad(np.array([1,1,1])*0.85)
+    cmap_inferno.set_bad(np.array([1,1,1])*0.85)
+
+    #save in plot
+    fig = plt.figure(figsize=(4,12))
+    ax = fig.add_subplot(311, projection=wcs)
+    im = ax.imshow(map_sigma[0],cmap=cmap_inferno, vmin=0, vmax=5)
+    fig.colorbar(im, ax=ax, label='Peak (K)')
+    ax.set_xlabel(labelx)
+    ax.set_ylabel(labely)
+    ax2 = fig.add_subplot(312, projection=wcs)
+    im2 = ax2.imshow(map_sigma[1],vmin=6.5,vmax=7.5, cmap=cmap)
+    fig.colorbar(im2, ax=ax2, label='Velocity (km/s)')
+    ax2.set_xlabel(labelx)
+    ax2.set_ylabel(labely)
+    ax3 = fig.add_subplot(313, projection=wcs)
+    im3 = ax3.imshow(map_sigma[2], cmap=cmap_inferno, origin='lower', vmin=0, vmax=0.8)
+    fig.colorbar(im3, ax=ax3, label='Velocity dispersion (km/s)')
+    ax3.set_xlabel(labelx)
+    ax3.set_ylabel(labely)
+    fig.savefig(streamersavename,dpi=300,bbox_inches='tight')
+
+# separation of rotation components
+if os.path.exists(fitrotfile):
+    map_sigma = fits.getdata(fitrotfile)
+    header = fits.getheader(fitrotfile)
+else:
+    # load components
+    header = fits.getheader(fitfile1aicres)
+    wcs = WCS(header).celestial
+    comp_1G = fits.getdata(fitfile1aicres)
+    comp1_1G = comp_1G[:3] # remember they have the errors as well
+    ecomp1_1G = comp_1G[3:]
+    comp_2G = fits.getdata(fitfile2aicres)
+    comp1_2G = comp_2G[:3]
+    comp2_2G = comp_2G[3:6]
+    ecomp1_2G = comp_2G[6:9]
+    ecomp2_2G = comp_2G[9:]
+    comp_3G = fits.getdata(fitfile3aicres)
+    comp1_3G = comp_3G[:3]
+    comp2_3G = comp_3G[3:6]
+    comp3_3G = comp_3G[6:9]
+    ecomp1_3G = comp_3G[9:12]
+    ecomp2_3G = comp_3G[12:15]
+    ecomp3_3G = comp_3G[15:]
+
+    map_rot = np.zeros(np.shape(comp_1G)) * np.nan # We save errors as well
+    xx, yy = np.meshgrid(range(np.shape(comp1_1G)[2]),range(np.shape(comp1_1G)[1]))
+
+    # components that I think correspond to the rotation
+    comp1G_streamer = comp1_1G
+    comp2G_streamer = comp1_2G
+    # comp3G_streamer = comp1_3G
+    ecomp1G_streamer = ecomp1_1G
+    ecomp2G_streamer = ecomp1_2G
+    # ecomp3G_streamer = ecomp1_3G
+
+    index_rot = np.where(np.multiply(np.multiply(comp1G_streamer[2]>dispersionminrot, comp1G_streamer[1]>7.1), comp1G_streamer[1]<8.0))
+    map_rot[0, index_rot[0], index_rot[1]] = comp1G_streamer[0, index_rot[0], index_rot[1]]
+    map_rot[1, index_rot[0], index_rot[1]] = comp1G_streamer[1, index_rot[0], index_rot[1]]
+    map_rot[2, index_rot[0], index_rot[1]] = comp1G_streamer[2, index_rot[0], index_rot[1]]
+    map_rot[3, index_rot[0], index_rot[1]] = ecomp1G_streamer[0, index_rot[0], index_rot[1]]
+    map_rot[4, index_rot[0], index_rot[1]] = ecomp1G_streamer[1, index_rot[0], index_rot[1]]
+    map_rot[5, index_rot[0], index_rot[1]] = ecomp1G_streamer[2, index_rot[0], index_rot[1]]
+
+    index_rot2 = np.where(np.multiply(comp2G_streamer[1]>7.03, comp2G_streamer[2]<1.0))
+    map_rot[0, index_rot2[0], index_rot2[1]] = comp2G_streamer[0, index_rot2[0], index_rot2[1]]
+    map_rot[1, index_rot2[0], index_rot2[1]] = comp2G_streamer[1, index_rot2[0], index_rot2[1]]
+    map_rot[2, index_rot2[0], index_rot2[1]] = comp2G_streamer[2, index_rot2[0], index_rot2[1]]
+    map_rot[3, index_rot2[0], index_rot2[1]] = ecomp2G_streamer[0, index_rot2[0], index_rot2[1]]
+    map_rot[4, index_rot2[0], index_rot2[1]] = ecomp2G_streamer[1, index_rot2[0], index_rot2[1]]
+    map_rot[5, index_rot2[0], index_rot2[1]] = ecomp2G_streamer[2, index_rot2[0], index_rot2[1]]
+
+    index_rot3 = np.where(comp1_3G[1]<8.5)
+    map_rot[0, index_rot3[0], index_rot3[1]] = comp1_3G[0, index_rot3[0], index_rot3[1]]
+    map_rot[1, index_rot3[0], index_rot3[1]] = comp1_3G[1, index_rot3[0], index_rot3[1]]
+    map_rot[2, index_rot3[0], index_rot3[1]] = comp1_3G[2, index_rot3[0], index_rot3[1]]
+    map_rot[3, index_rot3[0], index_rot3[1]] = ecomp1_3G[0, index_rot3[0], index_rot3[1]]
+    map_rot[4, index_rot3[0], index_rot3[1]] = ecomp1_3G[1, index_rot3[0], index_rot3[1]]
+    map_rot[5, index_rot3[0], index_rot3[1]] = ecomp1_3G[2, index_rot3[0], index_rot3[1]]
+
+    index_rot3_corr = np.where(np.multiply(comp2_3G[1]>7.6, comp2_3G[1]<8.1))
+    map_rot[0, index_rot3_corr[0], index_rot3_corr[1]] = comp2_3G[0, index_rot3_corr[0], index_rot3_corr[1]]
+    map_rot[1, index_rot3_corr[0], index_rot3_corr[1]] = comp2_3G[1, index_rot3_corr[0], index_rot3_corr[1]]
+    map_rot[2, index_rot3_corr[0], index_rot3_corr[1]] = comp2_3G[2, index_rot3_corr[0], index_rot3_corr[1]]
+    map_rot[3, index_rot3_corr[0], index_rot3_corr[1]] = ecomp2_3G[0, index_rot3_corr[0], index_rot3_corr[1]]
+    map_rot[4, index_rot3_corr[0], index_rot3_corr[1]] = ecomp2_3G[1, index_rot3_corr[0], index_rot3_corr[1]]
+    map_rot[5, index_rot3_corr[0], index_rot3_corr[1]] = ecomp2_3G[2, index_rot3_corr[0], index_rot3_corr[1]]
+
 labelx = 'Right Ascension (J2000)'
 labely = 'Declination (J2000)'
 cmap = plt.cm.RdYlBu_r
@@ -122,17 +222,17 @@ cmap_inferno.set_bad(np.array([1,1,1])*0.85)
 #save in plot
 fig = plt.figure(figsize=(4,12))
 ax = fig.add_subplot(311, projection=wcs)
-im = ax.imshow(map_sigma[0],cmap=cmap_inferno, vmin=0, vmax=5)
+im = ax.imshow(map_rot[0],cmap=cmap_inferno, vmin=0, vmax=8)
 fig.colorbar(im, ax=ax, label='Peak (K)')
 ax.set_xlabel(labelx)
 ax.set_ylabel(labely)
 ax2 = fig.add_subplot(312, projection=wcs)
-im2 = ax2.imshow(map_sigma[1],vmin=6.5,vmax=7.5, cmap=cmap)
+im2 = ax2.imshow(map_rot[1],vmin=6.5,vmax=8.5, cmap=cmap)
 fig.colorbar(im2, ax=ax2, label='Velocity (km/s)')
 ax2.set_xlabel(labelx)
 ax2.set_ylabel(labely)
 ax3 = fig.add_subplot(313, projection=wcs)
-im3 = ax3.imshow(map_sigma[2], cmap=cmap_inferno, origin='lower', vmin=0, vmax=0.8)
+im3 = ax3.imshow(map_rot[2], cmap=cmap_inferno, origin='lower', vmin=0, vmax=2)
 fig.colorbar(im3, ax=ax3, label='Velocity dispersion (km/s)')
 ax3.set_xlabel(labelx)
 ax3.set_ylabel(labely)

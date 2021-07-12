@@ -148,7 +148,7 @@ ax3.set_xlim([xmin,xmax])
 def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA):
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=mass, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA)
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA, deltar=10*u.au)
     # we obtain the distance of each point in the sky
     d_sky_au = np.sqrt(x1**2 + z1**2)
     # Stream line into arcsec

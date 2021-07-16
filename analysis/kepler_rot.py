@@ -12,19 +12,20 @@ def v_kepler(mass, radius):
     return vel
 
 
-# pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
-pvfile = '../C18O/CDconfig/JEP/position_velocity/pvex_JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
-# savename = 'PV_diagram_SO_170_with_Kepler_rot_length1600AU.pdf'
-savename = 'PV_diagram_C18O_170_with_Kepler_rot_length1600AU_Fiorellino_21.pdf'
+pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+# pvfile = '../C18O/CDconfig/JEP/position_velocity/pvex_JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+savename = 'PV_diagram_SO_170_with_Kepler_rot_length1600AU.pdf'
+# savename = 'PV_diagram_C18O_170_with_Kepler_rot_length1600AU_Fiorellino_21.pdf'
 v_lsr = 7.48*u.km/u.s  # +- 0.14 km/s according to out C18O data
 arcsectoau = 293  # * u.au / u.arcsec
 pvdata = fits.getdata(pvfile)
 pvheader = fits.getheader(pvfile)
 rms = 0.01
-# contourlevels = np.array([5,15,25]) * rms
-contourlevels = np.array([3,5]) * rms
+contourlevels = np.array([3,5,15,25]) * rms
+# contourlevels = np.array([3,5]) * rms
 vmin = 0
-vmax = 0.07
+vmax = 0.4
+# vmax = 0.07
 
 # The position velocity file is designed for the middle of the offset array to
 # be the position of the protostar
@@ -59,31 +60,31 @@ fig.colorbar(pcolor, ax=ax, label=r'Intensity (Jy beam$^{-1}$)')
 
 
 # Now we plot a kepler rotation over it
-mstar = [0.4] * u.Msun
-mstar = [0.5, 0.7, 1.5, 1.9] * u.Msun
-inclination = 67 # 0 is face on
-colors = ['red', 'orange', 'red', 'orange']
-linestyles = ['-', '-', '--', '--']
-radius = np.linspace(1, 1600, 1000) * u.au
-radius_neg = np.linspace(-1, -1600, 1000) * u.au
-for mass, color, ls in zip(mstar, colors,  linestyles):
-    # velocity = v_kepler(mass, radius).to(u.km/u.s) + v_lsr
-    velocity = v_kepler(mass, radius).to(u.km/u.s) * np.sin(inclination*np.pi/180)
-    velocity_pos = velocity + v_lsr
-    velocity_neg = -1*velocity + v_lsr
-    ax.plot(radius, velocity_pos, ls=ls, color=color,
-            label=r'$M_{\star}='+str(mass.value)+r'M_{\odot}$')
-    ax.plot(radius_neg, velocity_neg, ls=ls, color=color)
+# mstar = [0.4] * u.Msun
+# mstar = [0.5, 0.7, 1.5, 1.9] * u.Msun
+# inclination = 67 # 0 is face on
+# colors = ['red', 'orange', 'red', 'orange']
+# linestyles = ['-', '-', '--', '--']
+# radius = np.linspace(1, 1600, 1000) * u.au
+# radius_neg = np.linspace(-1, -1600, 1000) * u.au
+# for mass, color, ls in zip(mstar, colors,  linestyles):
+#     # velocity = v_kepler(mass, radius).to(u.km/u.s) + v_lsr
+#     velocity = v_kepler(mass, radius).to(u.km/u.s) * np.sin(inclination*np.pi/180)
+#     velocity_pos = velocity + v_lsr
+#     velocity_neg = -1*velocity + v_lsr
+#     ax.plot(radius, velocity_pos, ls=ls, color=color,
+#             label=r'$M_{\star}='+str(mass.value)+r'M_{\odot}$')
+#     ax.plot(radius_neg, velocity_neg, ls=ls, color=color)
 ax.axhline(v_lsr.value,color='k', linestyle=':', linewidth=3)
 ax.axvline(0, color='k', linestyle=':', linewidth=1)
-ax.set_ylim([2, 12])
+ax.set_ylim([2, 13])
 ax.set_ylabel(r'$v_{LSR}$ (km s$^{-1}$)')
 ax.set_xlim([-1600, 1600])
 ax.set_xlabel('Offset distance (AU)')
 # ax.legend(fontsize=8, loc=4)
-ax.annotate(r'rms = 0.01 Jy beam$^{-1}$', (0.05, 0.05), xycoords='axes fraction', color='k', size=8)
+# ax.annotate(r'rms = 0.01 Jy beam$^{-1}$', (0.05, 0.05), xycoords='axes fraction', color='k', size=8)
 ax.annotate(r'i = 67$^{\circ}$', (0.05, 0.01), xycoords='axes fraction', color='k', size=8)
 
 bar = AnchoredSizeBar(ax.transData, 300, '300 AU', 2,pad=0.1, borderpad=0.5, sep=5,  frameon=False, color='k', size_vertical=0.08)
 ax.add_artist(bar)
-# fig.savefig(savename, dpi=300, bbox_inches='tight')
+fig.savefig(savename, dpi=300, bbox_inches='tight')

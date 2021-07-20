@@ -37,7 +37,7 @@ def probaic(aicmin, aiclist):
     return np.exp((aicmin-aiclist)/2)
 
 
-def filter3G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
+def filter3G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True, velmin=None, velmax=None):
     """
     Replace the pixels in the fitted cube with np.nan where the fit is not
     good enough according to our criteria.
@@ -50,6 +50,7 @@ def filter3G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
     check)
     - The error fraction is lower than errorfrac
     - The peak value must be larger than rms times rmslevel
+    - If defined, central velocity must be between velmin and velmax
     Args:
         variable (type): description
 
@@ -103,10 +104,22 @@ def filter3G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
                 np.where(spc.parcube[6] < rmslevel*rms, 1, 0)
     spc.parcube[np.where(np.repeat([peakmask], 9, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([peakmask], 9, axis=0))] = np.nan
-    sigmamask =
+    # sigmamask =
+    if velmin is not None:
+        vel1mask = np.where(spc.parcube[1] < velmin, 1, 0) + \
+            np.where(spc.parcube[4] < velmin, 1, 0)+ \
+            np.where(spc.parcube[7] < velmin, 1, 0)
+        spc.parcube[np.where(np.repeat([vel1mask], 9, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel1mask], 9, axis=0))] = np.nan
+    if velmax is not None:
+        vel2mask = np.where(spc.parcube[1] > velmax, 1, 0) + \
+            np.where(spc.parcube[4] > velmax, 1, 0)+ \
+            np.where(spc.parcube[7] > velmax, 1, 0)
+        spc.parcube[np.where(np.repeat([vel2mask], 9, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel2mask], 9, axis=0))] = np.nan
     return spc
 
-def filter2G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
+def filter2G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True, velmin=None, velmax=None):
     """
     Replace the pixels in the fitted cube with np.nan where the fit is not
     good enough according to our criteria.
@@ -118,6 +131,7 @@ def filter2G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
     - If one pixel in a spectra is np.nan, all the spectra must be nan (sanity
     check)
     - The error fraction is lower than errorfrac
+    - If defined, central velocity must be between velmin and velmax
     Args:
         variable (type): description
 
@@ -161,9 +175,19 @@ def filter2G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5, negative=True):
                 np.where(spc.parcube[3] < rmslevel*rms, 1, 0)
     spc.parcube[np.where(np.repeat([peakmask], 6, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([peakmask], 6, axis=0))] = np.nan
+    if velmin is not None:
+        vel1mask = np.where(spc.parcube[1] < velmin, 1, 0) + \
+            np.where(spc.parcube[4] < velmin, 1, 0)
+        spc.parcube[np.where(np.repeat([vel1mask], 6, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel1mask], 6, axis=0))] = np.nan
+    if velmax is not None:
+        vel2mask = np.where(spc.parcube[1] > velmax, 1, 0) + \
+            np.where(spc.parcube[4] > velmax, 1, 0)
+        spc.parcube[np.where(np.repeat([vel2mask], 6, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel2mask], 6, axis=0))] = np.nan
     return spc
 
-def filter1G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5,negative=True):
+def filter1G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5,negative=True, velmin=None, velmax=None):
     """
     Replace the pixels in the fitted cube with np.nan where the fit is not
     good enough according to our criteria.
@@ -205,6 +229,14 @@ def filter1G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5,negative=True):
     peakmask = np.where(spc.parcube[0] < rmslevel*rms, 1, 0)
     spc.parcube[np.where(np.repeat([peakmask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([peakmask], 3, axis=0))] = np.nan
+    if velmin is not None:
+        vel1mask = np.where(spc.parcube[1] < velmin, 1, 0)
+        spc.parcube[np.where(np.repeat([vel1mask], 3, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel1mask], 3, axis=0))] = np.nan
+    if velmax is not None:
+        vel2mask = np.where(spc.parcube[1] > velmax, 1, 0)
+        spc.parcube[np.where(np.repeat([vel2mask], 3, axis=0))] = np.nan
+        spc.errcube[np.where(np.repeat([vel2mask], 3, axis=0))] = np.nan
     return spc
 
 
@@ -228,6 +260,8 @@ cubefile = '../SO_55_44/CDconfigsmall/gaussian_fit_123G_fitcube2g/Per-emb-50_CD_
 fitregionfile = 'SO_2G_fitregion.reg'
 velinit = -1.0 * u.km/u.s
 velend = 13.0 * u.km/u.s
+velmin = 5.0
+velmax = 10.0
 starting_point = (37, 24)
 prob_tolerance = 0.05
 snratio = 4 # minimal signal to noise ratio for the fitted amplitude
@@ -247,7 +281,6 @@ if not os.path.exists(cubefile+'_fitcube2g.fits'):
     regionlist = regions.read_ds9(fitregionfile)
     subcube = cube1.subcube_from_regions(regionlist)
     subcube.hdu.writeto(cubefile+'_fitcube2g.fits')
-
 
 cube = SpectralCube.read(cubefile+'_fitcube2g.fits')
 cube = cube.to(u.K)
@@ -279,9 +312,6 @@ else:
     moments.writeto(momentsfile)
 spc2 = spc.copy()
 spc3 = spc.copy()
-# We use the moments to do initial guesses
-# Use the skew to determine the direction of the second gaussian
-
 
 """
 1 gaussian
@@ -293,13 +323,10 @@ if not os.path.exists(fitfile1):
     try:
         spc.fiteach(fittype='gaussian',
                     guesses=initguesses,
-                    # negamp=False,
                     verbose=1,
                     signal_cut=signal_cut,
                     blank_value=np.nan,
                     start_from_point=(starting_point))
-    # except ValueError:
-    #     print('There are non-finite parameters in the fit')
     except AssertionError:
         print('There are non-finite parameters in the fit')
     spc.write_fit(fitfile1)
@@ -317,9 +344,11 @@ The pixels we sample are:
 30, 12 : 3:29:07.7322, +31:21:54.225 (just below the rotation)
 33, 41 : 3:29:07.6964, +31:21:58.656 (northern inversion)
 34, 24 : (for some reason,here I see two but the aic is telling one component)
+28, 38 : one of the 3G problematic fits
 '''
-plot_x = [25,23,29,37,41,30,33,40,34]
-plot_y = [34,36,25,23,13,12,41,18,24]
+plot_x = [25,23,29,37,41,30,33,40,34,28,31]
+plot_y = [34,36,25,23,13,12,41,18,24,38,35]
+
 for x, y in zip(plot_x,plot_y):
     sp = spc.get_spectrum(x,y)
     sp.plotter()
@@ -327,18 +356,23 @@ for x, y in zip(plot_x,plot_y):
         sp.specfit.plot_fit()
     except ValueError:
         print("{0}, {1} has no fit for 2G".format(x, y))
-    sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.png')
+    sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.pdf')
     plt.close('all')
 
 
 """
 2 gaussians
+Working on the initial parameters
 """
-mom11 = spc.momentcube[1] - 0.2
-mom12 = spc.momentcube[1] + 0.2
-mom21 = mom22 = np.where(np.sqrt(spc.momentcube[2])/2 > min_sigma, np.sqrt(spc.momentcube[2])/2, min_sigma)
-mom02 = mom01
-initguesses2 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22]])
+
+mom11 = np.ones(np.shape(spc.momentcube[1])) * 9.2
+# mom11 = spc.momentcube[1] - 0.2
+mom12 = np.ones(np.shape(spc.momentcube[1])) * 7.5
+# mom12 = spc.momentcube[1] + 0.2
+# mom21 = mom22 = np.where(np.sqrt(spc.momentcube[2])/2 > min_sigma, np.sqrt(spc.momentcube[2])/2, min_sigma)
+mom21 = mom22 = np.ones(np.shape(spc.momentcube[2])) * 0.3
+mom02 = mom01 # then will be divided by 2
+initguesses2 = np.concatenate([[mom01/2, mom11, mom21], [mom02/2, mom12, mom22]])
 if not os.path.exists(cubefile + '_2G_initguesses.fits'):
     initguesses2file = fits.PrimaryHDU(data=initguesses2)
     initguesses2file.writeto(cubefile + '_2G_initguesses.fits')
@@ -376,7 +410,7 @@ for x, y in zip(plot_x,plot_y):
         plt.plot(xarr, g2(xarr), '--b')
     except ValueError:
         print("{0}, {1} has no fit for 2G".format(x, y))
-    sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.png')
+    sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.pdf')
     plt.close('all')
 
 """
@@ -385,8 +419,9 @@ larger than 5 kms, as a first test)
 
 """
 mom03 = mom01
-mom13 = mom11 - 0.2
-mom23 = mom22 * 4
+# mom13 = mom11 - 0.2
+mom13 = np.ones(np.shape(spc.momentcube[1])) * 6.8
+mom23 = np.ones(np.shape(spc.momentcube[2])) * 2
 
 initguesses3 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22], [mom03, mom13, mom23]])
 if not os.path.exists(cubefile + '_3G_initguesses.fits'):
@@ -428,14 +463,15 @@ for x, y in zip(plot_x,plot_y):
         plt.plot(xarr, g3(xarr), '--m')
     except ValueError:
         print("{0}, {1} has no fit for 3G".format(x, y))
-    sp3.plotter.savefig(cubefile+ '_3G_'+str(x)+'_'+str(y)+'.png')
+    sp3.plotter.savefig(cubefile+ '_3G_'+str(x)+'_'+str(y)+'.pdf')
     plt.close('all')
 
 # Apply the filters to the parameter cubes
 
-spc = filter1G(spc,rms,snratio)
-spc2 = filter2G(spc2,rms,snratio)
-spc3 = filter3G(spc3,rms,snratio)
+spc = filter1G(spc, rms, snratio, velmin=velmin, velmax=velmax)
+spc2 = filter2G(spc2, rms, snratio, velmin=velmin, velmax=velmax)
+spc3 = filter3G(spc3, rms, snratio, velmin=velmin, velmax=velmax)
+
 # save filtered map
 newheadaic = wcscel.to_header()
 fitfile1filtered = cubefile + '_1G_fitparams_filtered.fits'

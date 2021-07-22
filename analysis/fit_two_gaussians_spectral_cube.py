@@ -9,7 +9,7 @@ from astropy.io import fits
 from astropy.wcs import WCS
 import regions
 import os
-from astropy.modeling.functional_models import Gaussian2D
+from astropy.modeling.functional_models import Gaussian1D
 from astropy.coordinates import SkyCoord
 
 """
@@ -223,9 +223,9 @@ def filter1G(spc, rms, rmslevel, errorfrac=0.5, epsilon=1.e-5,negative=True):
 
 
 pbcor = False
-cubefile = '../SO2_11_1_11_10_0_10/CDconfig/Per-emb-50_CD_l031l070_uvsub_SO2_multi'
-signal_cut = 3
-snratio = 3
+cubefile = '../SO2_11_1_11_10_0_10/CDconfig/gaussian_model_12G/Per-emb-50_CD_l031l070_uvsub_SO2_multi'
+signal_cut = 4
+snratio = 4
 prob_tolerance = 0.05
 # cubefile_nonpb = '../' + H2CO_303_202_s
 # cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
@@ -297,7 +297,7 @@ if not os.path.exists(fitfile1):
     try:
         spc.fiteach(fittype='gaussian',
                     guesses=initguesses,
-                    # negamp=False,
+                    negamp=False,
                     verbose=1,
                     signal_cut=signal_cut,
                     blank_value=np.nan,
@@ -311,16 +311,43 @@ else:
     spc.load_model_fit(fitfile1, 3, fittype='gaussian')
 
 '''
+The pixels we sample are:
+
+25,34 : 3:29:07.7919, +31:21:57.586 (northern rotation)
+29, 25 : 3:29:07.7441, +31:21:56.211 (southern rotation)
+37, 23 : 3:29:07.6487, +31:21:55.906 (northern tip of the streamer)
+30, 12 : 3:29:07.7322, +31:21:54.225 (just below the rotation)
+33, 41 : 3:29:07.6964, +31:21:58.656 (northern inversion)
+34, 24 : (for some reason,here I see two but the aic is telling one component)
+28, 38 : one of the 3G problematic fits in SO
+'''
+plot_x = [25,23,29,37,30,33,34,28,31]
+plot_y = [34,36,25,23,12,41,24,38,35]
+
+for x, y in zip(plot_x,plot_y):
+    sp = spc.get_spectrum(x,y)
+    sp.plotter()
+    try:
+        sp.specfit.plot_fit()
+    except ValueError:
+        print("{0}, {1} has no fit for 2G".format(x, y))
+    sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.pdf')
+    plt.close('all')
+
+'''
 2 gaussians
 '''
-mom11 = spc.momentcube[1] - 1.
-mom12 = spc.momentcube[1]
-mom21 = mom22 = np.sqrt(spc.momentcube[2])/2
-
-mom01 = mom02 = np.where(spc.momentcube[0]>rms*snratio, spc.momentcube[0],rms*snratio)
+mom11 = np.ones(np.shape(spc.momentcube[1])) * 7.5
+mom12 = np.ones(np.shape(spc.momentcube[1])) * 9.2
+# mom21 = mom22 = np.sqrt(spc.momentcube[2])
+mom21 = mom22 = np.ones(np.shape(spc.momentcube[2])) * 0.6
+mom02 = mom01
 # mom11 = spc.momentcube[1] - 0.2
 # mom12 = spc.momentcube[1] + 0.2
-initguesses2 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22]])
+initguesses2 = np.concatenate([[mom01/2, mom11, mom21], [mom02*1.5, mom12, mom22]])
+if not os.path.exists(cubefile + '_2G_initguesses.fits'):
+    initguesses2file = fits.PrimaryHDU(data=initguesses2)
+    initguesses2file.writeto(cubefile + '_2G_initguesses.fits')
 
 fitfile2 = cubefile + '_2G_fitparams.fits'
 if os.path.exists(fitfile2):
@@ -337,6 +364,22 @@ else:
     except AssertionError:
         print('There are non-finite parameters in the fit')
     spc2.write_fit(fitfile2, overwrite=True)
+
+for x, y in zip(plot_x,plot_y):
+    sp2 = spc2.get_spectrum(x,y)
+    sp2.plotter()
+    xarr = sp2.xarr.value
+    params = spc2.parcube[:,y,x]
+    try:
+        sp2.specfit.plot_fit()
+        g1 = Gaussian1D(amplitude=params[0],mean=params[1],stddev=params[2])
+        g2 = Gaussian1D(amplitude=params[3],mean=params[4],stddev=params[5])
+        plt.plot(xarr, g1(xarr), '--g')
+        plt.plot(xarr, g2(xarr), '--b')
+    except ValueError:
+        print("{0}, {1} has no fit for 2G".format(x, y))
+    sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.pdf')
+    plt.close('all')
 
 spc = filter1G(spc,rms,snratio)
 spc2 = filter2G(spc2,rms,snratio)

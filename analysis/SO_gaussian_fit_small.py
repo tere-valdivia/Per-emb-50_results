@@ -215,7 +215,7 @@ region_mask = region_sample.to_mask().to_image((leny, lenx))
 
 
 # we load the fitcube
-fitcube = fits.getdata(fitcubefile)[0:3]
+fitcube = fits.getdata(fitcubefile)[0:6]
 fitcubeshape = np.shape(fitcube)
 initx = int(region_sample.center.x - region_sample.width/2)
 inity = int(region_sample.center.y - region_sample.height/2)
@@ -223,6 +223,7 @@ for k in range(3):
     for j in range(int(region_sample.height)):
         for i in range(int(region_sample.width)):
             spc.parcube[k,j+inity,i+initx] = fitcube[k, j, i]
+            spc.errcube[k,j+inity,i+initx] = fitcube[k+3, j, i]
 
 
 # for y,x,j,i in zip(wheremask[1],wheremask[2], range(fitcubeshape[1]),range(fitcubeshape[2])):

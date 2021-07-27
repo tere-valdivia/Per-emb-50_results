@@ -23,23 +23,12 @@ Mstar = (M_s+M_env+M_disk)
 # Disk inclination system (i=0 is edge on)
 # inc = -(90-67) * u.deg
 # PA_ang = (170+90)*u.deg
-# C18O proposed system (not exactly counter-rotating)
+# Proposed C18O inclination system (-170 deg)
 # inc = -(90-67) * u.deg
-# PA_ang = (170+90+180)*u.deg
-# C18O proposed system (10 deg)
-# inc = -(90-67) * u.deg
-# PA_ang = (100)*u.deg
-# C18O proposed system 2 (faceon)
-# inc = -(67) * u.deg
-# PA_ang = (170+90+180)*u.deg
-# # C18O proposed system 3 (mid face-edge on)
-# inc = -(45) * u.deg
-# PA_ang = (170+90+180)*u.deg
-# Wrong disk inclination system (-170 deg)
-inc = -(90-67) * u.deg
+inc = -(43) * u.deg
 PA_ang = (20+90)*u.deg
-regionsample = 'data/region_streamer_C18O_test4.reg'
-# regionsample = 'data/region_streamer_C18O_test4.reg'
+# regionsample = 'data/region_streamer_l.reg'
+regionsample = 'data/region_streamer_C18O_final.reg'
 imagename = '../'+C18O_2_1_TdV+'.fits'
 vcname = '../'+C18O_2_1_fit_Vc+'.fits'
 # Fixed parameter
@@ -124,7 +113,7 @@ r_proj, v_los = per_emb_50_get_vc_r(vcname, '../'+regionsample)
 xmin = 0
 xmax = 5000
 # y is velocity lsr
-ymin = 6.
+ymin = 6.5
 ymax = 8.5
 
 xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
@@ -148,7 +137,7 @@ ax3.set_xlim([xmin,xmax])
 def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA):
     (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
         mass=mass, r0=r0, theta0=theta0, phi0=phi0,
-        omega=omega0, v_r0=v_r0, inc=inc, pa=PA, deltar=10*u.au)
+        omega=omega0, v_r0=v_r0, inc=inc, pa=PA) #, deltar=10*u.au)
     # we obtain the distance of each point in the sky
     d_sky_au = np.sqrt(x1**2 + z1**2)
     # Stream line into arcsec
@@ -166,12 +155,11 @@ def r0ideal(omega, mass, rcideal):
 
 
 # Initial parameters
-theta0 = 104 * u.deg  # rotate clockwise
-# r_c0 = 250 * u.au
-r0 = 3330 * u.au
-phi0 = (168)* u.deg  # rotate the plane
-v_r0 = 0 * u.km/u.s
-omega0 = 14.41e-13 / u.s
+theta0 = 89.5 * u.deg  # rotate clockwise
+r0 = 3670*u.au
+phi0 = 162.0 * u.deg
+v_r0 = 0.05 * u.km/u.s
+omega0 = 8.72e-13 / u.s
 # r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 # r_min = 100*u.au
 # r_min = r_c0
@@ -190,10 +178,10 @@ annotation = ax3.annotate(r'$r_c = {}$'.format(np.round(r_c,0)), (0.6, 0.1), xyc
 line_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
                       ls='-', lw=2)
 line_vel, = ax3.plot(dsky0, velo0)
-
-line_old_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
-                      ls='--', lw=2)
-line_old_vel, = ax3.plot(dsky0, velo0,ls='--')
+#
+# line_old_image, = ax.plot(fil0.ra, fil0.dec, transform=ax.get_transform('fk5'),
+#                       ls='--', lw=2)
+# line_old_vel, = ax3.plot(dsky0, velo0,ls='--')
 
 # We create the sliders
 axcolor = 'paleturquoise'
@@ -202,10 +190,9 @@ stheta0 = Slider(axtheta0, r'$\theta_0$', 0, 180., valinit=theta0.value, valstep
 axphi0 = plt.axes([0.2, 0.15, 0.6, 0.03], facecolor=axcolor)
 sphi0 = Slider(axphi0, r'$\phi_0$', -90, 270, valinit=phi0.value, valstep=delta_phi0)
 axr0 = plt.axes([0.2, 0.2, 0.6, 0.03], facecolor=axcolor)
-# src0 = Slider(axrc0, r'$r_{c,0}$', 200, 500, valinit=r_c0.value, valstep=delta_rc0)
-sr0 = Slider(axr0, r'$r_0$', 1500, 10000, valinit=r0.value, valstep=delta_r0)
+sr0 = Slider(axr0, r'$r_0$', 1500, 5000, valinit=r0.value, valstep=delta_r0)
 axomega0 = plt.axes([0.2, 0.25, 0.6, 0.03], facecolor=axcolor)
-somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-16, 19e-13, valinit=omega0.value, valstep=delta_omega0)
+somega0 = Slider(axomega0, r'$\Omega_0$', 1.e-14, 15e-13, valinit=omega0.value, valstep=delta_omega0)
 axv0 = plt.axes([0.2, 0.3, 0.6, 0.03], facecolor=axcolor)
 sv0 = Slider(axv0, r'$v_{r,0}$', 0, 5, valinit=v_r0.value, valstep=delta_v_r0)
 

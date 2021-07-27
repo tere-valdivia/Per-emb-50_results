@@ -28,17 +28,20 @@ M_s = 1.71*u.Msun # was 2.9
 # M_env = 0.18*u.Msun # lower limit
 M_env = 0.39*u.Msun # upper limit
 M_disk = 0.58*u.Msun
-# Mstar = (M_s+M_env+M_disk)
-Mstar = 8.3 *u.Msun # test for
+Mstar = (M_s+M_env+M_disk)
+# Mstar = 8.3 *u.Msun # test for
 # Disk inclination system
 # inc = -(90-67) * u.deg
 # PA_ang = (170+90)*u.deg
 # C18O proposed system
-inc = -(90-67) * u.deg
+inc = -(43) * u.deg
 PA_ang = (20+90)*u.deg
-regionsample = 'data/region_streamer_C18O_test4.reg'
+regionsample = 'data/region_streamer_C18O_final.reg'
 savekernel = False
-savemodel = False
+savemodel = True
+vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_final_C18O.pickle'
+stream_params = 'streamer_model_C18O_0.39Msun_env_params.pickle'
+stream_linesave = 'streamer_model_C18O_0.39Msun_env_vr.pickle'
 
 # Fixed parameter
 v_lsr = 7.48*u.km/u.s #+- 0.14 km/s according to out C18O data
@@ -142,7 +145,7 @@ r_proj, v_los = per_emb_50_get_vc_r('../'+C18O_2_1_fit_Vc+'.fits',
 xmin = 0
 xmax = 5000
 # y is velocity lsr
-ymin = 6.
+ymin = 6.5
 ymax = 8.5
 
 xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
@@ -167,13 +170,13 @@ def r0ideal(omega, mass, rcideal):
     return r0i
 
 # Constant parameters for testing
-theta0 = 89. * u.deg  # rotate clockwise
+theta0 = 89.5 * u.deg  # rotate clockwise
 # r_c0 = 300 * u.au
 # phi0 = 90. * u.deg  # rotate the plane
-phi0 = 173.5 * u.deg  # rotate the plane
-v_r0 = 0 * u.km/u.s
-omega0 = 11e-13 / u.s
-r0 = 3670*u.au
+phi0 = 162 * u.deg  # rotate the plane
+v_r0 = 0.1 * u.km/u.s
+omega0 = 8.97e-13 / u.s
+r0 = 3660*u.au
 #r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 # print('The ideal r0 for '+str(omega0)+' is '+str(r0))
 
@@ -210,9 +213,10 @@ def stream_label(v_r=None, omega=None, theta=None, phi=None, r=None, M=None):
     return my_label
 
 # Single parameters
+rc = SL.r_cent(Mstar, omega0, r0)
 (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=100*u.au)
+    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=rc)
 my_label = stream_label(omega=omega0, theta=theta0, phi=phi0, r=r0, v_r=v_r0)
 # we obtain the distance of each point in the sky
 d_sky_au = np.sqrt(x1**2 + z1**2)
@@ -345,13 +349,11 @@ ax2.legend(prop={'size': 8})
 plt.show()
 
 if savekernel:
-    vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_s.pickle'
     KDE_vel_rad = {'radius': xx, 'v_lsr': yy, 'dens': zz}
     with open(vlsr_rad_kde_pickle, 'wb') as f:
         pickle.dump(KDE_vel_rad, f)
 
 if savemodel:
-    stream_params = 'streamer_model_H2CO_0.39Msun_env_params.pickle'
     stream_model_params = {'theta0': theta0, 'r0': r0, 'phi0': phi0,
                            'v_r0': v_r0, 'omega0': omega0, 'v_lsr': v_lsr, 'inc': inc,
                            'PA': PA_ang}
@@ -359,8 +361,7 @@ if savemodel:
         pickle.dump(stream_model_params, f)
 
 
-    stream_pickle = 'streamer_model_H2CO_0.39Msun_env_vr.pickle'
     stream_model = {'ra': fil.ra.value*u.deg, 'dec': fil.dec.value*u.deg,
                     'd_sky_au': d_sky_au, 'vlsr': v_lsr + vy1}
-    with open(stream_pickle, 'wb') as f:
+    with open(stream_linesave, 'wb') as f:
         pickle.dump(stream_model, f)

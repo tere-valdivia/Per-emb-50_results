@@ -31,8 +31,10 @@ amplitude_guess = beam_weighted_spectrum.max().value
 center_guess = ((beam_weighted_spectrum*specaxis).sum()/beam_weighted_spectrum.sum()).value
 width_guess = 1.
 guesses = [amplitude_guess, center_guess, width_guess]
+
+fig = plt.figure(figsize=(4,4))
 sp.specfit(fittype='gaussian', guesses=guesses)
 
-sp.plotter(errstyle='fill')
+sp.plotter()
 sp.specfit.plot_fit()
-# plt.savefig('C18O_beam_weighted_spectra_Per50.png', bbox_inches='tight')
+plt.savefig('C18O_beam_weighted_spectra_Per50.pdf', bbox_inches='tight')

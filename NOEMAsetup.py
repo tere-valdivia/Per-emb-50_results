@@ -30,18 +30,31 @@ C18O_2_1_s = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O
 
 # Data files for analysis
 H2CO_303_202_TdV = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_total_mom0'
-H2CO_303_202_TdV_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_stream_mom0'
-C18O_2_1_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_fitcube_total_mom0'
+H2CO_303_202_TdV_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_stream_mom0' #ok
+SO_55_44_TdV_s = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_total_mom0' #ok
+SO_55_44_PV = 'data/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec' # ok
+SO_55_44_streamer = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_streamer_model'
+SO_55_44_infall = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_infall_model'
+SO_55_44_rot = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_rotation_model'
+SO_55_44_disk = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_wings_model'
+C18O_2_1_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_fitcube_total_mom0' # ok
 C18O_2_1_fit_Vc = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_1G_Vc'
 C18O_2_1_fit_Vc_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_1G_Vc'
+C18O_2_1_fitparams = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_1G_fitparams' # ok
+C18O_2_1_PV = 'data/pvex_JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pvline_center_Per50_1arcsec_170PA_12arcsec' # ok
 H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_Vc'
+H2CO_303_202_fit_sigmav = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_sigma_v'
+H2CO_303_202_fitparams = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_fitparams'
 H2CO_303_202_pb_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_Vc'
 region_streamer = 'data/region_streamer.reg'
 region_streamer_s = 'data/region_streamer_s.reg'
+SO2_11_1_11_10_0_10_PV = 'data/pvex_Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec'
+SO2_11_1_11_10_0_10_TdV = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_total_mom0'
 
 CO21blue = 'data/Per50.12CO21.robust-1_1.0to4.5_blue'
 CO21red = 'data/Per50.12CO21.robust-1_10.5to14.0_red'
 
+continuum_selfcal = 'data/Per-emb-50_CD_li_cont_rob1-selfcal'
 
 def pb_noema(freq_obs):
     """

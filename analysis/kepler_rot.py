@@ -11,10 +11,11 @@ def v_kepler(mass, radius):
     vel = np.sqrt(G * mass / radius)
     return vel
 
-
-pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+pvfile = '../SO2_11_1_11_10_0_10/CDconfig/pvex_Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+# pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
 # pvfile = '../C18O/CDconfig/JEP/position_velocity/pvex_JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
-savename = 'PV_diagram_SO_170_with_Kepler_rot_length1600AU.pdf'
+savename = 'PV_diagram_SO2_170_length1600AU.pdf'
+# savename = 'PV_diagram_SO_170_with_Kepler_rot_length1600AU.pdf'
 # savename = 'PV_diagram_C18O_170_with_Kepler_rot_length1600AU_Fiorellino_21.pdf'
 v_lsr = 7.48*u.km/u.s  # +- 0.14 km/s according to out C18O data
 arcsectoau = 293  # * u.au / u.arcsec
@@ -24,7 +25,7 @@ rms = 0.01
 contourlevels = np.array([3,5,15,25]) * rms
 # contourlevels = np.array([3,5]) * rms
 vmin = 0
-vmax = 0.4
+vmax = 0.15
 # vmax = 0.07
 
 # The position velocity file is designed for the middle of the offset array to

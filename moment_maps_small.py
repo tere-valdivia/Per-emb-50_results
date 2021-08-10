@@ -11,7 +11,7 @@ import os
 This code computes the moments 0, 1 and 8 and the linewidth map for the cube which
 is used to fit gaussian profiles later and of the complete cubes
 '''
-mask = False
+mask = True
 velinit = 5.5 * u.km/u.s
 # velend = 8.0 * u.km/u.s  # streamline feature
 velend = 9.5 * u.km/u.s # total emission

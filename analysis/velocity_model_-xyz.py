@@ -24,24 +24,28 @@ since correcting the angles, not ran again
 
 # Main parameters to generate a streamline
 # The mass is currently in testing
-M_s = 1.71*u.Msun # was 2.9
-# M_env = 0.18*u.Msun # lower limit
-M_env = 0.39*u.Msun # upper limit
+M_s = 1.71*u.Msun
+M_env = 0.18*u.Msun # lower limit
+# M_env = 0.39*u.Msun # upper limit
 M_disk = 0.58*u.Msun
 Mstar = (M_s+M_env+M_disk)
 # Mstar = 8.3 *u.Msun # test for
 # Disk inclination system
-# inc = -(90-67) * u.deg
-# PA_ang = (170+90)*u.deg
+inc = -(90-67) * u.deg
+PA_ang = (170+90)*u.deg
 # C18O proposed system
-inc = -(43) * u.deg
-PA_ang = (20+90)*u.deg
-regionsample = 'data/region_streamer_C18O_final.reg'
+# inc = -(43) * u.deg
+# PA_ang = (20+90)*u.deg
+regionsample = 'data/region_streamer_l_kink.reg'
+# regionsample = 'data/region_streamer_C18O_final.reg'
 savekernel = False
-savemodel = True
-vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_final_C18O.pickle'
-stream_params = 'streamer_model_C18O_0.39Msun_env_params.pickle'
-stream_linesave = 'streamer_model_C18O_0.39Msun_env_vr.pickle'
+savemodel = False
+vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_l_H2CO.pickle'
+stream_params = 'streamer_model_H2CO_0.18Msun_env_params.pickle'
+stream_linesave = 'streamer_model_H2CO_0.18Msun_env_vr.pickle'
+# vlsr_rad_kde_pickle = 'Velocity_Radius_KDE_reg_final_C18O.pickle'
+# stream_params = 'streamer_model_C18O_0.39Msun_env_params.pickle'
+# stream_linesave = 'streamer_model_C18O_0.39Msun_env_vr.pickle'
 
 # Fixed parameter
 v_lsr = 7.48*u.km/u.s #+- 0.14 km/s according to out C18O data
@@ -57,7 +61,8 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 
 # Figure 2: plot to observe the streamer in the image plane
-hdu = fits.open('../'+C18O_2_1_TdV+'.fits')
+# hdu = fits.open('../'+C18O_2_1_TdV+'.fits')
+hdu = fits.open('../'+H2CO_303_202_TdV+'.fits')
 header = hdu[0].header
 freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
 wcs = WCS(header)
@@ -138,7 +143,7 @@ ax2.plot(my_axis_new.ra[0:2], my_axis_new.dec[0:2], transform=ax2.get_transform(
 
 # Obtain the offset radius from Per-emb-50 and the v_lsr for each
 # pixel in the streamer region
-r_proj, v_los = per_emb_50_get_vc_r('../'+C18O_2_1_fit_Vc+'.fits',
+r_proj, v_los = per_emb_50_get_vc_r('../'+H2CO_303_202_fit_Vc+'.fits',
                                     '../'+regionsample)
 # create the grid for the kernel distribution
 #x is projected distance
@@ -170,13 +175,13 @@ def r0ideal(omega, mass, rcideal):
     return r0i
 
 # Constant parameters for testing
-theta0 = 89.5 * u.deg  # rotate clockwise
+theta0 = 61.5 * u.deg  # rotate clockwise
 # r_c0 = 300 * u.au
 # phi0 = 90. * u.deg  # rotate the plane
-phi0 = 162 * u.deg  # rotate the plane
-v_r0 = 0.1 * u.km/u.s
-omega0 = 8.97e-13 / u.s
-r0 = 3660*u.au
+phi0 = 28 * u.deg  # rotate the plane
+v_r0 = 1.25 * u.km/u.s
+omega0 = 4.53e-13 / u.s
+r0 = 3330*u.au
 #r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
 # print('The ideal r0 for '+str(omega0)+' is '+str(r0))
 

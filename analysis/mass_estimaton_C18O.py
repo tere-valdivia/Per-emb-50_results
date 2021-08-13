@@ -29,7 +29,7 @@ Inputs
 # filenames
 filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
 filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
-tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc.csv'
+tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc_tmodel_{1}Msun.csv'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
 NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
@@ -44,6 +44,7 @@ mu_H2 = 2.7
 B0 = (54891.420 * u.MHz).to(1/u.s)
 # In the future this can be changed to a T_ex map
 Tex_u = ufloat(15., 5.)
+M_env = 0.39 #* u.Msun
 '''
 End inputs
 '''
@@ -75,8 +76,8 @@ mom0kink = unumpy.uarray(mom0kink.value, u_mom0kink.value)
 # this time is just to do a quick estimate of accretion timescale using t_ff
 # M_s = 1.71 * u.Msun
 M_s = ufloat(1.71, 0.19)
-# M_env = 0.39 * u.Msun
-M_env = ufloat(0.285, 0.105)
+
+# M_env = ufloat(0.285, 0.105)
 M_disk = 0.58 #* u.Msun
 Mstar = (M_s + M_env + M_disk)
 
@@ -125,8 +126,8 @@ else:
 #     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
 
 # Now we take the total mass and estimate accretion
-if os.path.exists(tablefile_unumpy.format(formatname)):
-    results_mass_unumpy = pd.read_csv(tablefile_unumpy.format(formatname))
+if os.path.exists(tablefile_unumpy.format(formatname, M_env)):
+    results_mass_unumpy = pd.read_csv(tablefile_unumpy.format(formatname, M_env))
 else:
     results_mass_unumpy = pd.DataFrame(index=['No kink', 'Kink'])
     for index, map in zip(results_mass_unumpy.index.values, [NC18O, NC18Okink]):
@@ -144,6 +145,7 @@ else:
         results_mass_unumpy.loc[index, 'M (M_sun)'] = MH2.n
         results_mass_unumpy.loc[index, 'u M (M_sun)'] = MH2.s
         results_mass_unumpy.loc[index, 't_freefall (yr)'] = t_ff.n
+        results_mass_unumpy.loc[index, 'u t_freefall (yr)'] = t_ff.s
         dotM = MH2/t_ff
         results_mass_unumpy.loc[index, 'dotM_in (M_sun/yr) (M_star=0.39Msun)'] = dotM.n
         results_mass_unumpy.loc[index, 'u dotM_in (M_sun/yr)'] = dotM.s
@@ -151,7 +153,7 @@ else:
         results_mass_unumpy.loc[index, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
         results_mass_unumpy.loc[index, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
 
-    results_mass_unumpy.to_csv(tablefile_unumpy.format(formatname))
+    results_mass_unumpy.to_csv(tablefile_unumpy.format(formatname, M_env))
 print(results_mass_unumpy[['Sum NC18O (cm-2 Npx)', 'u Sum NC18O (cm-2 Npx)']])
 # change this part of the code to work with the new functions
 # Here we calculate the NC18O map and statistics with Tex with no errors

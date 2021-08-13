@@ -15,6 +15,8 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 '''
+This code is set to estimate the mass and accretion rate along the streamer.
+
 Important functions
 '''
 
@@ -60,20 +62,21 @@ def M_hydrogen2_unumpy(N, mu, D, deltara, deltadec):
 '''
 Inputs
 '''
-# Tex_u = ufloat(15, 5)
-Tex_u = 15
-# formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
-formatname = str(int(Tex_u))
-tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_rolledbin_unc_tmodel_nodist.csv'.format(formatname)
-modelname = 'H2CO_0.39Msun_env'
+Tex_u = ufloat(15, 5)
+Menv = 0.39 # M_sun
+# Tex_u = 15
+formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
+# formatname = str(int(Tex_u))
+tablefilemacc = 'M_Mdot_Tex_{0}_mom0_pbcor_rolledbin_unc_tmodel_Menv_{1}Msun.csv'.format(formatname, Menv)
+modelname = 'H2CO_{0}Msun_env'.format(Menv)
 fileinpickle = 'streamer_model_'+modelname+'_params'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
 NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
 uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
 NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
-radius3Dmapname = 'column_dens_maps/distance_3D_map.fits'
-radiusmapname = 'column_dens_maps/distance_2D_map.fits'
+# radius3Dmapname = 'column_dens_maps/distance_3D_map.fits'
+# radiusmapname = 'column_dens_maps/distance_2D_map.fits'
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm).value
@@ -85,7 +88,7 @@ deltar = 10*u.au  # sample size for the streamline model
 # Central envelope parameters
 M_s = 1.71 * u.Msun
 # M_s = ufloat(1.71, 0.19)
-M_env = 0.39 * u.Msun
+M_env = Menv * u.Msun
 # M_env = ufloat(0.285, 0.105)
 M_disk = 0.58 * u.Msun
 Mstar = (M_s + M_env + M_disk)
@@ -130,7 +133,7 @@ PA_ang = streamdict['PA']
 # We run the streamline model
 (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=10*u.au, deltar=deltar)
+    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=10*u.au) #, deltar=deltar)
 rc = SL.r_cent(mass=Mstar, omega=omega0, r0=r0)
 
 # we need the pixel location of the streamer for the future
@@ -167,6 +170,7 @@ deltat = (deltas / vel_mean).to(u.yr)
 # we reverse two times to sum from protostar to start point and return the
 # array to its original order
 time_integral_path = np.flip(np.cumsum(np.flip(deltat))).to(u.yr)
+print('The total infall time is '+str(time_integral_path[0]))
 
 # Now, we separate the streamer in bins
 # for the streamer-calculated distances
@@ -205,7 +209,7 @@ for i in range(len(radiuses)):
         dist_projected_mean.value < radiuses2[i]))
     streamer_distances = dist_mean[indexbin]
     streamer_times = time_integral_path[indexbin]
-    streamer_times_theory = time_theory[indexbin]
+    # streamer_times_theory = time_theory[indexbin]
     deltat_bin = deltat[indexbin]
     xs = xstream[indexbin]
     zs = zstream[indexbin]
@@ -249,10 +253,10 @@ mass_streamer_table['u Mass wo kink (Msun)'] = unumpy.std_devs(masses)
 mass_streamer_table['Mass w kink (Msun)'] = unumpy.nominal_values(masseskink)
 mass_streamer_table['u Mass w kink (Msun)'] = unumpy.std_devs(masseskink)
 mass_streamer_table['t_ff streamline (yr, M_env = 0.39 Msun)'] = unumpy.nominal_values(times)
-mass_streamer_table['u t_ff streamline (yr, M_env = 0.39 Msun)'] = unumpy.std_devs(times)
-mass_streamer_table['t_ff streamline kink (yr, M_env = 0.39 Msun)'] = unumpy.nominal_values(timeskink)
-mass_streamer_table['u t_ff streamline kink (yr, M_env = 0.39 Msun)'] = unumpy.std_devs(timeskink)
-mass_streamer_table['deltat_ff streamline (yr, M_env = 0.39 Msun)'] = deltatlist.value
+mass_streamer_table['u t_ff streamline (yr, M_env = {0} Msun)'.format(Menv)] = unumpy.std_devs(times)
+mass_streamer_table['t_ff streamline kink (yr, M_env = {0} Msun)'.format(Menv)] = unumpy.nominal_values(timeskink)
+mass_streamer_table['u t_ff streamline kink (yr, M_env = {0} Msun)'.format(Menv)] = unumpy.std_devs(timeskink)
+mass_streamer_table['deltat_ff streamline (yr, M_env = {0} Msun)'.format(Menv)] = deltatlist.value
 mass_streamer_table['Mdot_in wo kink (Msun yr-1)'] = unumpy.nominal_values(m_inlist)
 mass_streamer_table['u Mdot_in wo kink (Msun yr-1)'] = unumpy.std_devs(m_inlist)
 mass_streamer_table['Mdot_in w kink (Msun yr-1)'] = unumpy.nominal_values(m_inlistkink)

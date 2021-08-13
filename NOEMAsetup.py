@@ -247,6 +247,35 @@ def t_freefall_acc_unumpy(r_fin, r_init, r0, mass):
     return integral
 
 
+def J_nu(nu, T):
+    """
+    Calculates the Rayleigh-Jeans equivalent temperature J_nu, in particular to
+    aid in the calculation of the column density of C18O (but is used for any
+    molecule)
+
+    Note that the input parameter nu must have its corresponding unit
+
+    Returns the equivalent temperature in K but no quantity
+    changed the np.exp to umath.exp
+    """
+    over = (h * nu / k_B).to(u.K)
+    under = umath.exp(over.value/T) - 1.
+    return (over.value/under)
+
+
+def Qrot(B0, Tex):
+    """
+    Calculates the partition function of a rigid rotor, diatomic molecule, with
+    the 1st order Taylor approximation
+
+    The partition function is adimensional,  so the function returns a float
+
+    Tex must not be a quantity if it has an associated error
+    """
+    preamble = (k_B / (h * B0)).to(1/u.K)
+    taylorapp = preamble.value * Tex + 1./3.
+    return taylorapp
+
 def N_C18O_21(TdV, B0, Tex, f=1, nu=219560.3541 * u.MHz):
     '''
     Returns the column density of C18O based on the J=2-1 transition

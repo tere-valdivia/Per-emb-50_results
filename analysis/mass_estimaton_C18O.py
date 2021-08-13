@@ -20,42 +20,8 @@ import astropy.units as u
 This code creates the N(C18O) maps and takes important statistics and quick
 calculations.
 
-Important functions
+Important functions moved to NOEMAsetup
 '''
-
-# M_hydrogen2 moved to NOEMAsetup
-
-
-def J_nu(nu, T):
-    """
-    Calculates the Rayleigh-Jeans equivalent temperature J_nu, in particular to
-    aid in the calculation of the column density of C18O (but is used for any
-    molecule)
-
-    Note that the input parameter nu must have its corresponding unit
-
-    Returns the equivalent temperature in K but no quantity
-    changed the np.exp to umath.exp
-    """
-    over = (h * nu / k_B).to(u.K)
-    under = umath.exp(over.value/T) - 1.
-    return (over.value/under)
-
-
-def Qrot(B0, Tex):
-    """
-    Calculates the partition function of a rigid rotor, diatomic molecule, with
-    the 1st order Taylor approximation
-
-    The partition function is adimensional,  so the function returns a float
-
-    Tex must not be a quantity if it has an associated error
-    """
-    preamble = (k_B / (h * B0)).to(1/u.K)
-    taylorapp = preamble.value * Tex + 1./3.
-    return taylorapp
-
-# Moved NC18O to NOEMAsetup
 
 '''
 Inputs
@@ -63,8 +29,6 @@ Inputs
 # filenames
 filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
 filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
-# tablefile = 'M_H2_Tex_fixed_mom0_pbcor_unc.csv'
-# tablefilekink = 'M_H2_Tex_fixed_mom0_pbcor_kink_unc.csv'
 tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc.csv'
 NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
@@ -73,16 +37,13 @@ uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
 NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
 # constants
 rms = 0.40993961429269554 * u.K * u.km/u.s
-# The rms of the cube between 5.5 and 9.5 km/s is 0.41823096924675096 K
 X_C18O = 5.9e6  # Frerking et al 1982
 # this is the X_C18O value used in Nishimura et al 2015 for Orion clouds
 distance = (dist_Per50 * u.pc).to(u.cm)
 mu_H2 = 2.7
 B0 = (54891.420 * u.MHz).to(1/u.s)
-# You can use an array of temps or a ufloat
-Texlist = np.array([10, 11, 12, 13, 14, 15]) * u.K
+# In the future this can be changed to a T_ex map
 Tex_u = ufloat(15., 5.)
-# Tex_u = 15.
 '''
 End inputs
 '''
@@ -127,22 +88,41 @@ NC18Oheader['bunit'] = 'cm-2'
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
 # formatname = str(int(Tex_u))
 
-NC18O = N_C18O_21(mom0, B0, Tex_u)
-
-if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
+if os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
+    NC18O = fits.getdata('column_dens_maps/'+NC18Ofilename.format(formatname))
+    uNC18O = fits.getdata('column_dens_maps/'+uNC18Ofilename.format(formatname))
+    NC18O = unumpy.uarray(NC18O, uNC18O)
+else:
+    NC18O = N_C18O_21(mom0, B0, Tex_u)
     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(formatname))
-if not os.path.exists('column_dens_maps/'+uNC18Ofilename.format(formatname)):
     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(formatname))
 
-NC18Okink = N_C18O_21(mom0kink, B0, Tex_u)
-if not os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(formatname)):
+# if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
+#     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
+#     newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(formatname))
+# if not os.path.exists('column_dens_maps/'+uNC18Ofilename.format(formatname)):
+#     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
+#     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(formatname))
+
+if os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(formatname)):
+    NC18Okink = fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
+    uNC18Okink = fits.getdata('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
+    NC18Okink = unumpy.uarray(NC18Okink, uNC18Okink)
+else:
+    NC18Okink = N_C18O_21(mom0kink, B0, Tex_u)
     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18Okink), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
-if not os.path.exists('column_dens_maps/'+uNC18Ofilenamekink.format(formatname)):
     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18Okink), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
+
+# if not os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(formatname)):
+#     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18Okink), header=NC18Oheader)
+#     newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
+# if not os.path.exists('column_dens_maps/'+uNC18Ofilenamekink.format(formatname)):
+#     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18Okink), header=NC18Oheader)
+#     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
 
 # Now we take the total mass and estimate accretion
 if os.path.exists(tablefile_unumpy.format(formatname)):
@@ -163,6 +143,7 @@ else:
         MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
         results_mass_unumpy.loc[index, 'M (M_sun)'] = MH2.n
         results_mass_unumpy.loc[index, 'u M (M_sun)'] = MH2.s
+        results_mass_unumpy.loc[index, 't_freefall (yr)'] = t_ff.n
         dotM = MH2/t_ff
         results_mass_unumpy.loc[index, 'dotM_in (M_sun/yr) (M_star=0.39Msun)'] = dotM.n
         results_mass_unumpy.loc[index, 'u dotM_in (M_sun/yr)'] = dotM.s

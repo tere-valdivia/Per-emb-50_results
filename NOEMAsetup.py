@@ -51,8 +51,8 @@ region_streamer_s = 'data/region_streamer_s.reg'
 SO2_11_1_11_10_0_10_PV = 'data/pvex_Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec'
 SO2_11_1_11_10_0_10_TdV = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_total_mom0'
 
-CO21blue = 'data/Per50.12CO21.robust-1_1.0to4.5_blue'
-CO21red = 'data/Per50.12CO21.robust-1_10.5to14.0_red'
+CO21blue = 'data/Per-emb-50_CD_ui_12CO_blue_min4to4kms'
+CO21red = 'data/Per-emb-50_CD_ui_12CO_red_11to20kms'
 
 continuum_selfcal = 'data/Per-emb-50_CD_li_cont_rob1-selfcal'
 

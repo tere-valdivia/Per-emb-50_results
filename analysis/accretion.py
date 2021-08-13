@@ -63,7 +63,7 @@ def M_hydrogen2_unumpy(N, mu, D, deltara, deltadec):
 Inputs
 '''
 Tex_u = ufloat(15, 5)
-Menv = 0.39 # M_sun
+Menv = 0.18 # M_sun
 # Tex_u = 15
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
 # formatname = str(int(Tex_u))
@@ -156,16 +156,16 @@ dy1 = np.roll(y1, 1) - y1
 dz1 = np.roll(z1, 1) - z1
 
 # now, we take the mean velocity between segments and calculate deltat
-deltas = np.sqrt(dx1**2 + dy1**2 + dz1**2)[1:]
+# usually we need to sacrifice the first two points: the first because of the
+# roll and the second because of the initial v=0. At this point is important
+# to check how many points we need to leave out, specially with omega0 close
+# to 1e-14 / u.s, and modify the range below
+deltas = np.sqrt(dx1**2 + dy1**2 + dz1**2)[1:] # this is delta S, the path
 vel_mean = 0.5 * (np.roll(vel_streamer, 1) + vel_streamer)[1:]
 dist_mean = 0.5 * (np.roll(dist_streamer, 1) + dist_streamer)[1:]
 dist_projected_mean = 0.5 * (np.roll(dist_projected, 1) + dist_projected)[1:]
 deltat = (deltas / vel_mean).to(u.yr)
-
-# usually we need to sacrifice the first two points: the first because of the
-# roll and the second because of the initial v=0. At this point is important
-# to check how many points we need to leave out, specially with omega0 close
-# to 1e-14 / u.s, and modify the range above
+indexsum = np.where(dist_mean>rc)
 
 # we reverse two times to sum from protostar to start point and return the
 # array to its original order
@@ -174,8 +174,8 @@ print('The total infall time is '+str(time_integral_path[0]))
 
 # Now, we separate the streamer in bins
 # for the streamer-calculated distances
-radiuses = np.arange(0., 3200.-binsize, binsize/2)  # list of projected lengths we want to sample
-radiuses2 = np.arange(binsize, 3200., binsize/2)
+radiuses = np.arange(200, 3200.-binsize, binsize/2)  # list of projected lengths we want to sample
+radiuses2 = np.arange(200+binsize, 3200., binsize/2)
 
 binradii = np.zeros(len(radiuses)) * u.AU  # length of the streamer in bin
 binradiierr = np.zeros(len(radiuses)) * u.AU

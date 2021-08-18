@@ -131,10 +131,11 @@ inc = streamdict['inc']
 PA_ang = streamdict['PA']
 
 # We run the streamline model
+rc = SL.r_cent(mass=Mstar, omega=omega0, r0=r0)
 (x1, y1, z1), (vx1, vy1, vz1) = SL.xyz_stream(
     mass=Mstar, r0=r0, theta0=theta0, phi0=phi0,
-    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=10*u.au) #, deltar=deltar)
-rc = SL.r_cent(mass=Mstar, omega=omega0, r0=r0)
+    omega=omega0, v_r0=v_r0, inc=inc, pa=PA_ang, rmin=rc) #, deltar=deltar)
+
 
 # we need the pixel location of the streamer for the future
 dra_stream = -x1.value / dist_Per50

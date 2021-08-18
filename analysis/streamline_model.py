@@ -115,8 +115,7 @@ zz /= zz.max()  # normalization of probability
 r_c = SL.r_cent(Mstar, omega0, r0)
 d_sky_au = np.sqrt(x1**2 + z1**2)
 # Stream line into arcsec
-dra_stream = -x1.value / dist_Per50  # ask why it is negative, but probably
-# because the east is to the left of the plot
+dra_stream = -x1.value / dist_Per50  # it is negative because x grows to negative RA
 ddec_stream = z1.value / dist_Per50
 fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
                frame=Per50_ref).transform_to(FK5)
@@ -161,7 +160,13 @@ fil = SkyCoord(dra_stream*u.arcsec, ddec_stream*u.arcsec,
 # plt.show()
 dist_3d = np.sqrt(x1**2 + y1**2 + z1**2)
 index_rc = np.argmin(np.abs(dist_3d - r_c))
-dist_3d[index_rc]
 
 v_impact = np.sqrt(vx1[index_rc]**2 + vy1[index_rc]**2 + vz1[index_rc]**2)
-v_impact
+print('The total velocity at the centrifugal radius is', np.round(v_impact, 1))
+print('The velocity angle with respect to the line of sight is ', 90*u.deg +np.arctan2(vy1[index_rc],vx1[index_rc]).to(u.deg))
+print('Sanity check:')
+print('The angle with respect to the z axis is ', np.arccos(vz1[index_rc].value/ v_impact.value)*180/np.pi, ' deg')
+print('The line of sight velocity at the centrifugal radius is ', np.round(vy1[index_rc],1))
+print('The calculation -|v|*sin(theta)*cos(phi) gives ', -4.1 * np.sin(np.arccos(vz1[index_rc].value/ v_impact.value)) * np.cos(-53*np.pi/180))
+
+print('If the last two velocities are the same, all is ok')

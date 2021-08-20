@@ -15,12 +15,12 @@ moments 0, 1 and 2 of the image
 
 """
 
-folder = 'C18O/CDconfig/JEP/'
-cubename = folder + 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+folder = 'SO2_11_1_11_10_0_10/CDconfig/'
+cubename = folder + 'Per-emb-50_CD_l031l070_uvsub_SO2_multi'
 emptyheader = False
 
-velstart = -1  # km/s
-velend = 14  # km/s
+velstart = 5.5  # km/s
+velend = 12  # km/s
 
 
 logfile = open(cubename+'_loginfo.txt', 'w')

@@ -62,20 +62,20 @@ fig.colorbar(pcolor, ax=ax, label=r'Intensity (Jy beam$^{-1}$)')
 
 # Now we plot a kepler rotation over it
 # mstar = [0.4] * u.Msun
-# mstar = [0.5, 0.7, 1.5, 1.9] * u.Msun
-# inclination = 67 # 0 is face on
-# colors = ['red', 'orange', 'red', 'orange']
-# linestyles = ['-', '-', '--', '--']
-# radius = np.linspace(1, 1600, 1000) * u.au
-# radius_neg = np.linspace(-1, -1600, 1000) * u.au
-# for mass, color, ls in zip(mstar, colors,  linestyles):
-#     # velocity = v_kepler(mass, radius).to(u.km/u.s) + v_lsr
-#     velocity = v_kepler(mass, radius).to(u.km/u.s) * np.sin(inclination*np.pi/180)
-#     velocity_pos = velocity + v_lsr
-#     velocity_neg = -1*velocity + v_lsr
-#     ax.plot(radius, velocity_pos, ls=ls, color=color,
-#             label=r'$M_{\star}='+str(mass.value)+r'M_{\odot}$')
-#     ax.plot(radius_neg, velocity_neg, ls=ls, color=color)
+mstar = [0.5, 0.7, 1.5, 1.9] * u.Msun
+inclination = 67 # 0 is face on
+colors = ['red', 'orange', 'red', 'orange']
+linestyles = ['-', '-', '--', '--']
+radius = np.linspace(1, 1600, 1000) * u.au
+radius_neg = np.linspace(-1, -1600, 1000) * u.au
+for mass, color, ls in zip(mstar, colors,  linestyles):
+    # velocity = v_kepler(mass, radius).to(u.km/u.s) + v_lsr
+    velocity = v_kepler(mass, radius).to(u.km/u.s) * np.sin(inclination*np.pi/180)
+    velocity_pos = velocity + v_lsr
+    velocity_neg = -1*velocity + v_lsr
+    ax.plot(radius, velocity_pos, ls=ls, color=color,
+            label=r'$M_{\star}='+str(mass.value)+r'M_{\odot}$')
+    ax.plot(radius_neg, velocity_neg, ls=ls, color=color)
 ax.axhline(v_lsr.value,color='k', linestyle=':', linewidth=3)
 ax.axvline(0, color='k', linestyle=':', linewidth=1)
 ax.set_ylim([2, 13])

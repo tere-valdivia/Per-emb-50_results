@@ -12,13 +12,13 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 ######################
 
 # where we modify mass and rc
-M = (1.7+0.58+0.39) * u.Msun
-# M_list = np.array([0.5, 1, 1.5]) * u.Msun
+# M = (1.7+0.58+0.39) * u.Msun
+M_list = np.array([1, 1.5, 3]) * u.Msun
 # r_border = 50 * u.au
 # change mass
 # rc = r_border * 2 # centrifugal radius, cent. barrier is 1/2 this
-# rc = 240 * u.au
-rc_list = np.array([200, 240, 300]) * u.au
+rc = 240 * u.au
+# rc_list = np.array([200, 240, 300]) * u.au
 
 # where we modify centrifugal barrier and maximum rotational velocity
 # vrotmax_list = [1.5, 3.5, 5.5] * u.km/u.s
@@ -61,7 +61,9 @@ contourlevels = np.array([3,5,15,25]) * rms
 # contourlevels = np.array([3,5]) * rms
 vmin = 0
 vmax = 0.45
-inclination = 67 # 0 is face on
+inclination = 67
+# inclination_list = [20, 45, 60]
+ # 0 is face on
 # The position velocity file is designed for the middle of the offset array to
 # be the position of the protostar
 delta0 = pvheader['CRVAL1']
@@ -99,7 +101,7 @@ x_neg = np.linspace(0, -1600, 300) * u.au
 
 
 colors = ['green','red', 'orange']
-for rc, color in zip(rc_list, colors):
+for M, color in zip(M_list, colors):
     # when we change mass and rc
     l_test = np.sqrt(rc * G * M).to(u.km**2/u.s)
     # when we change vmax and rc
@@ -124,7 +126,8 @@ for rc, color in zip(rc_list, colors):
     ax.plot(x.value, velocity_max+v_lsr.value, color=color)
     ax.plot(x_neg.value, vel_negx_max+v_lsr.value, color=color)
     ax.plot(x_neg.value, velocity_negx_min+v_lsr.value, color=color)
-    ax.plot(x.value, velocity_min+v_lsr.value, color=color, label='rc = '+str(rc))
+    ax.plot(x.value, velocity_min+v_lsr.value, color=color, label='M = '+str(M))
+
 ax.axhline(v_lsr.value,color='k', linestyle=':', linewidth=1)
 ax.axvline(0, color='k', linestyle=':', linewidth=1)
 ax.set_ylabel(r'$v_{LSR}$ (km s$^{-1}$)')

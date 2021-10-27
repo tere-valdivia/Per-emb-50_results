@@ -15,12 +15,12 @@ moments 0, 1 and 2 of the image
 
 """
 
-folder = 'SO2_11_1_11_10_0_10/CDconfig/'
-cubename = folder + 'Per-emb-50_CD_l031l070_uvsub_SO2_multi'
-emptyheader = False
+folder = '12CO/'
+cubename = folder + 'Per-emb-50_CD_ui_12CO'
+emptyheader = True
 
-velstart = 5.5  # km/s
-velend = 12  # km/s
+velstart = -4  # km/s
+velend = 20  # km/s
 
 
 logfile = open(cubename+'_loginfo.txt', 'w')

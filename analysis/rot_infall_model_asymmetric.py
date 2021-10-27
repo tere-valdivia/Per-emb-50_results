@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import astropy.units as u
 import matplotlib.pyplot as plt
 from astropy.constants import G
@@ -34,9 +35,10 @@ M_red= 4 * u.Msun #initial mass is star and disk
 rc_red = 130 * u.au # initial centrifugal radius is
 M_blue = 2.9 * u.Msun #initial mass is star and disk
 rc_blue = 100 * u.au # initial centrifugal radius is
+rc_blue2 = 200 * u.au # initial centrifugal radius is
 offset_model = np.linspace(-1500, 1500, 300) * u.au
 
-savename = 'PV_diagram_SO_170_with_Sakai_toymodel_asymetric_vlsr7.5.pdf'
+savename = 'PV_diagram_SO_170_with_Sakai_toymodel_asymetric_vlsr7.5_200.pdf'
 pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
 v_lsr = 7.5*u.km/u.s
 arcsectoau = 293  # * u.au / u.arcsec
@@ -111,21 +113,38 @@ ax.set_xticks([-1000, -500, 0, 500, 1000])
 
 vel_redshift_0_nonconv = get_curve_redshift(offset_model, M_red, rc_red, inclination)
 vel_blueshift_0_nonconv = get_curve_blueshift(offset_model, M_blue, rc_blue, inclination)
+vel_blueshift_0_nonconv2 = get_curve_blueshift(offset_model, M_blue, rc_blue2, inclination)
 vel_redshift_0 = get_curve_redshift(offset_model, M_red, rc_red, inclination, smooth=True, kernelsize=beamstddev_pix)
 vel_blueshift_0 = get_curve_blueshift(offset_model, M_blue, rc_blue, inclination, smooth=True, kernelsize=beamstddev_pix)
+vel_blueshift_02 = get_curve_blueshift(offset_model, M_blue, rc_blue2, inclination, smooth=True, kernelsize=beamstddev_pix)
 
 offset_model_plot = offset_model[np.where(np.abs(offset_model.value)<1000)]
 vel_redshift_plot = vel_redshift_0[np.where(np.abs(offset_model.value)<1000)]
 vel_blueshift_plot = vel_blueshift_0[np.where(np.abs(offset_model.value)<1000)]
+vel_blueshift_plot2 = vel_blueshift_02[np.where(np.abs(offset_model.value)<1000)]
 vel_redshift_nonconv_plot = vel_redshift_0_nonconv[np.where(np.abs(offset_model.value)<1000)]
 vel_blueshift_nonconv_plot = vel_blueshift_0_nonconv[np.where(np.abs(offset_model.value)<1000)]
+vel_blueshift_nonconv_plot2 = vel_blueshift_0_nonconv2[np.where(np.abs(offset_model.value)<1000)]
 
 line_vel_red, = ax.plot(offset_model_plot.value, vel_redshift_plot+v_lsr.value, color='red', label='Convolved')
 line_vel_blue, = ax.plot(offset_model_plot.value, vel_blueshift_plot+v_lsr.value, color='blue')
+line_vel_blue2, = ax.plot(offset_model_plot.value, vel_blueshift_plot2+v_lsr.value, color='green', label='rc=200 blue')
+
 line_vel_red_nonconv, = ax.plot(offset_model_plot.value, vel_redshift_nonconv_plot+v_lsr.value, color='red', ls=':', label='Not convolved')
 line_vel_blue_nonconv, = ax.plot(offset_model_plot.value, vel_blueshift_nonconv_plot+v_lsr.value, color='blue', ls=':')
+line_vel_blue_nonconv2, = ax.plot(offset_model_plot.value, vel_blueshift_nonconv_plot2+v_lsr.value, color='green', ls=':')
+
 bar_transparent = ax.axvspan(-1500, np.amin(offset_model_plot.value), alpha=0.5, edgecolor='grey', facecolor='grey')
 bar_transparent2 = ax.axvspan(np.amax(offset_model_plot.value), 1500, alpha=0.5, edgecolor='grey', facecolor='grey')
 
 ax.legend(loc=4, prop={'size': 6})
-fig.savefig(savename, bbox_inches='tight', dpi=300)
+
+# saving the curve
+df = pd.DataFrame()
+df['Offset_au'] = offset_model_plot.value
+df['Vel_red_nonconv'] = vel_redshift_nonconv_plot+v_lsr.value
+df['Vel_red'] = vel_redshift_plot+v_lsr.value
+df['Vel_blue_nonconv'] = vel_blueshift_nonconv_plot+v_lsr.value
+df['Vel_blue'] = vel_blueshift_plot+v_lsr.value
+df.to_csv('Sakai_model_results.csv')
+# fig.savefig(savename, bbox_inches='tight', dpi=300)

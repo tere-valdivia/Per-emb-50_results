@@ -26,6 +26,7 @@ SO_55_44_s = 'SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small
 SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
 C18O_2_1 = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 C18O_2_1_s = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+SO2_11_1_11_10_0_10 = 'SO2_11_1_11_10_0_10/CDconfig/Per-emb-50_CD_l031l070_uvsub_SO2_multi'
 
 
 # Data files for analysis
@@ -104,7 +105,7 @@ def setup_plot_noema(fig_i, label_col='black', star_col='red'):
     fig_i.scalebar.set_label('2000 au')
     fig_i.scalebar.set_font(family='monospace', weight=1000)
     fig_i.show_markers(ra_Per50.value, dec_Per50.value, marker='*', s=60, layer='star',
-                       edgecolor=star_col, facecolor=label_col, zorder=31)
+                       edgecolor=star_col, facecolor=label_col, zorder=1000)
     fig_i.tick_labels.set_xformat('hh:mm:ss')
     fig_i.tick_labels.set_yformat('dd:mm:ss')
     fig_i.ticks.set_length(7)

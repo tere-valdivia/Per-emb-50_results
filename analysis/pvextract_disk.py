@@ -12,18 +12,18 @@ import numpy as np
 from NOEMAsetup import *
 
 savepv = 0
-saveplot = 1
+saveplot = 0
 vmin = 0.
-vmax = 0.3
+vmax = 2
 stretch = 'linear'
-velinit = 0
+velinit = 0.01
 velend = 14
 radiusplot = 8/3600
 
-folder = '../C18O/CDconfig/JEP/'
-cubename = 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
-# folder = '../SO_55_44/CDconfig/'
-# cubename = 'Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor'
+# folder = '../C18O/CDconfig/JEP/'
+# cubename = 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+folder = '../SO_55_44/CDconfig/'
+cubename = 'Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor'
 # folder = '../SO2_11_1_11_10_0_10/CDconfig/'
 # cubename = 'Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor'
 cube = SpectralCube.read(folder+cubename+'.fits').with_spectral_unit(u.km /
@@ -31,7 +31,8 @@ cube = SpectralCube.read(folder+cubename+'.fits').with_spectral_unit(u.km /
 header = cube.header
 ra = ra_Per50
 dec = dec_Per50
-plotname = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly'
+anglepa = 170
+plotname = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly'
 # regionfile = folder + 'pvline.reg'
 
 moment0 = cube.moment(order=0).hdu
@@ -44,7 +45,7 @@ wcsmom0 = WCS(moment0.header)
 g_cent = SkyCoord(ra, dec)
 length = 12 * u.arcsec
 # pa_angle_cent = (287.4-90) * u.deg
-pa_angle_cent = (170) * u.deg
+pa_angle_cent = anglepa * u.deg
 path_cent = PathFromCenter(center=g_cent, length=length, angle=pa_angle_cent, width=1*u.arcsec)
 
 patch_list = path_cent.to_patches(1, wcsmom0, alpha=0.3, color='w')
@@ -77,7 +78,8 @@ fig = plt.figure(figsize=(4, 4))
 
 # ax = fig.add_subplot(211, projection=wcsmom0)
 ax = fig.add_subplot(111, projection=wcsmom0)
-im = ax.imshow(moment0.data, cmap='inferno', vmin=vmin, vmax=vmax)
+norm_mom0 = simple_norm(moment0.data, 'asinh', asinh_a=0.3, min_cut=0)
+im = ax.imshow(moment0.data, cmap='inferno', norm=norm_mom0)
 # ax.scatter(pvline.start.x, pvline.start.y, color='g', label='(0,0)')
 fig.colorbar(im, ax=ax, label=r'Integrated Intensity (Jy beam$^{-1}$ km s$^{-1}$)')
 ax.set_xlabel('RA (J2000)')

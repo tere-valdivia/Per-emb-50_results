@@ -10,6 +10,7 @@ from astropy import units as u
 from pvextractor import Path, extract_pv_slice, PathFromCenter
 import numpy as np
 from NOEMAsetup import *
+import os
 
 savepv = 0
 saveplot = 0
@@ -20,10 +21,10 @@ velinit = 0.01
 velend = 14
 radiusplot = 8/3600
 
-# folder = '../C18O/CDconfig/JEP/'
-# cubename = 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
-folder = '../SO_55_44/CDconfig/'
-cubename = 'Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor'
+folder = '../C18O/CDconfig/JEP/'
+cubename = 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+# folder = '../SO_55_44/CDconfig/'
+# cubename = 'Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor'
 # folder = '../SO2_11_1_11_10_0_10/CDconfig/'
 # cubename = 'Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor'
 cube = SpectralCube.read(folder+cubename+'.fits').with_spectral_unit(u.km /
@@ -33,6 +34,8 @@ ra = ra_Per50
 dec = dec_Per50
 anglepa = 170
 plotname = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly'
+plotnamearcsec = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly_arcsec'
+
 # regionfile = folder + 'pvline.reg'
 
 moment0 = cube.moment(order=0).hdu
@@ -57,6 +60,19 @@ patch_list = path_cent.to_patches(1, wcsmom0, alpha=0.3, color='w')
 slice1 = extract_pv_slice(cube, path_cent)
 if savepv:
     slice1.writeto(plotname+'.fits')
+if not os.path.exists(plotnamearcsec+'.fits'):
+    pvdata = np.flip(slice1.data, axis=0) # so that the velocities grow instead of decreasing
+    pvheader = slice1.header
+    pvheader['CRPIX1'] = int(pvheader['NAXIS1']/2)
+    pvheader['CDELT1'] = pvheader['CDELT1']*3600 # we just change the unit to be able to use it with Cote's code
+    pvheader['CUNIT1'] = 'arcsec'
+    if np.sign(pvheader['CDELT2'])<0:
+        velinit = pvheader['CRVAL2'] + pvheader['CDELT2'] * (pvheader['NAXIS2'] - pvheader['CRPIX2']) # this is the velocity in the new first pixel
+        pvheader['CRPIX2'] = 1 # the first pixel is our new reference
+        pvheader['CRVAL2'] = velinit # the first pixel will have the lowest velocity
+        pvheader['CDELT2'] *= -1
+    hdu = fits.PrimaryHDU(data=pvdata, header=pvheader)
+    hdu.writeto(plotnamearcsec+'.fits')
 
 norm = simple_norm(slice1.data, stretch, min_cut=0, max_cut=0.15)
 

@@ -1,3 +1,13 @@
+"""
+Author: Teresa Valdivia-Mena
+Last revised August 30, 2022
+
+This code is to fit one Gaussian to each spectra above a certain signal to noise
+level for H2CO (303-202) and C18O (2-1) emission cubes.
+
+Current state: C18O
+"""
+
 from astropy.coordinates import SkyCoord
 from astropy.modeling.functional_models import Gaussian2D
 import os
@@ -17,7 +27,6 @@ from NOEMAsetup import *
 # Files to use
 # cubefile = '../' + H2CO_303_202_s
 cubefile = '../' + C18O_2_1_s # '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
-# cubefile_nonpb = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 
 # Define the velocities where there is emission to calculate the rms
 # For pbcor, we need to give it the rms
@@ -28,11 +37,11 @@ velend = 9.5 * u.km/u.s
 # Region where we want to fit: it is a square that is smaller than the "small"
 # cube
 
-fitregionfile = 'C18O_fitregion.reg' # H2CO_fitregion.reg
+fitregionfile = 'C18O_fitregion.reg' # 'H2CO_fitregion.reg'
 
 # starting_point = (70, 82)  # H2CO
 # starting_point = (53,116)
-starting_point = (126,135) #C18O
+starting_point = (133,104) #C18O
 
 if not os.path.exists(cubefile+'_fitcube.fits'):
     # The cube must be in K and km/s
@@ -58,7 +67,7 @@ chanlims = [wcsspec.world_to_pixel(velinit).tolist(), wcsspec.world_to_pixel(vel
 # only for the rms
 rms = np.nanstd(np.vstack([spc.cube[:int(np.min(chanlims))], spc.cube[int(np.max(chanlims)):]]))
 rmsmap = np.ones(np.shape(spc.cube)) * rms
-print(rms)
+print(rms, spc.unit)
 
 momentsfile = cubefile+'_fitcube_moments.fits'
 if os.path.exists(momentsfile):
@@ -87,67 +96,84 @@ def filter(spc, rms, rmslevel, velinit, velend, negative=True, errorfrac=0.5, ep
     check)
 
     Args:
-        variable (type): description
+        spc (pyspeckit.Cube): pyspeckit cube with the data already fitted
+        rms (float): rms noise level of the cube in K
+        rmslevel (float): signal-to-noise ratio for the desired threshold
+        for the peak values
+        velinit, velend (float): initial and final velocity where the central
+        position of the lines are estimated to be
+        negative (bool): if True, filter out fits with negative peaks. Default
+        is True
+        errorfrac (float): maximum fraction between the uncertainty of a
+        parameter and the value of that parameter. All spectra with any error
+        fraction larger than this value will be filtered
+        epsilon (float): tolerance for the error. If the uncertainty is below
+        this value, the spectrum will be filtered
+
 
     Returns:
-        type: description
-
-    Raises:
-        Exception: description
+        pyspeckit.Cube: pyspeckit cube with its parcube and errcube modified
+        to fit the criteria
 
     """
-
     zeromask = np.where(np.abs(spc.errcube[0]) < epsilon, 1, 0) + \
         np.where(np.abs(spc.errcube[1]) < epsilon, 1, 0) + \
         np.where(np.abs(spc.errcube[2]) < epsilon, 1, 0)
     spc.parcube[np.where(np.repeat([zeromask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([zeromask], 3, axis=0))] = np.nan
+
     if negative:
         negativemask = np.where(spc.parcube[0] < 0, 1, 0) + \
             np.where(spc.parcube[1] < 0, 1, 0) + \
             np.where(spc.parcube[2] < 0, 1, 0)
         spc.parcube[np.where(np.repeat([negativemask], 3, axis=0))] = np.nan
         spc.errcube[np.where(np.repeat([negativemask], 3, axis=0))] = np.nan
+
     errormask = np.where(np.abs(spc.errcube[0]/spc.parcube[0]) > errorfrac, 1, 0)\
         + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)\
         + np.where(np.abs(spc.errcube[1]/spc.parcube[1]) > errorfrac, 1, 0)
     spc.parcube[np.where(np.repeat([errormask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([errormask], 3, axis=0))] = np.nan
+
     velocitymask = np.where(spc.parcube[1] < velinit.value, 1, 0) + \
         np.where(spc.parcube[1] > velend.value, 1, 0)
     spc.parcube[np.where(np.repeat([velocitymask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([velocitymask], 3, axis=0))] = np.nan
+
     peakmask = np.where(spc.parcube[0] < rmslevel*rms, 1, 0)
     spc.parcube[np.where(np.repeat([peakmask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([peakmask], 3, axis=0))] = np.nan
+
     sigmamask = np.where(spc.parcube[2] > (velend-velinit).value/2, 1, 0) + \
         np.where(spc.parcube[2] < np.abs(header['cdelt3']), 1, 0)
     spc.parcube[np.where(np.repeat([sigmamask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([sigmamask], 3, axis=0))] = np.nan
+
     # Force if one pixel in a channel is nan, all the same pixels
-    # in all  channels must be nan
+    # in all channels must be nan
     nanmask = np.sum(np.where(np.isnan(np.concatenate([spc.parcube, spc.errcube])), 1, 0), axis=0)
     spc.parcube[np.where(np.repeat([nanmask], 3, axis=0))] = np.nan
     spc.errcube[np.where(np.repeat([nanmask], 3, axis=0))] = np.nan
+
     return spc
 
 
 fitfile = cubefile + '_fitcube_1G_fitparams.fits'
 if os.path.exists(fitfile):
     spc.load_model_fit(fitfile, 3, fittype='gaussian')
-    # spc = filter(spc, rms, 4, velinit, velend)
     fittedmodel = spc.get_modelcube()
-    # spc.write_fit(fitfile, overwrite=True)
 else:
+    # running time: about 5 minutes for H2CO
     spc.fiteach(fittype='gaussian',
                 use_neighbor_as_guess=True,
                 guesses=spc.momentcube,
-                verbose=1,
+                verbose_level=0,
+                verbose=0,
                 errmap=rmsmap,
                 signal_cut=4,
+                prevalidate_guesses=True,
                 blank_value=np.nan,
                 start_from_point=(starting_point))
-    # spc = filter(spc, rms, 4, velinit, velend)
     spc.write_fit(fitfile)
     fittedmodel = spc.get_modelcube()
 

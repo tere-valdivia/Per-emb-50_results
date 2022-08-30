@@ -25,7 +25,7 @@ SO_55_44 = 'SO_55_44/CDconfig/Per-emb-50_CD_l009l048_uvsub_SO_multi'
 SO_55_44_s = 'SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
 SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
 C18O_2_1 = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
-C18O_2_1_s = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+C18O_2_1_s = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small'
 SO2_11_1_11_10_0_10 = 'SO2_11_1_11_10_0_10/CDconfig/Per-emb-50_CD_l031l070_uvsub_SO2_multi'
 
 

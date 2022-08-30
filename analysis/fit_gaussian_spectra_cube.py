@@ -15,9 +15,8 @@ from NOEMAsetup import *
 
 
 # Files to use
-cubefile = '../' + H2CO_303_202_s
-# cubefile_nonpb = '../' + H2CO_303_202_s
-# cubefile = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
+# cubefile = '../' + H2CO_303_202_s
+cubefile = '../' + C18O_2_1_s # '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor'
 # cubefile_nonpb = '../C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 
 # Define the velocities where there is emission to calculate the rms
@@ -29,10 +28,11 @@ velend = 9.5 * u.km/u.s
 # Region where we want to fit: it is a square that is smaller than the "small"
 # cube
 
-fitregionfile = 'H2CO_fitregion.reg'
-starting_point = (70, 82)  # H2CO
+fitregionfile = 'C18O_fitregion.reg' # H2CO_fitregion.reg
+
+# starting_point = (70, 82)  # H2CO
 # starting_point = (53,116)
-# starting_point = (126,135) #C18O
+starting_point = (126,135) #C18O
 
 if not os.path.exists(cubefile+'_fitcube.fits'):
     # The cube must be in K and km/s

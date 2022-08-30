@@ -30,11 +30,11 @@ Inputs
 filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
 filenameC18Okink = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l_kink'
 tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc_tmodel_{1}Msun.csv'
-NC18Ofilename = 'N_C18O_constantTex_{0}K_mom0_pbcor.fits'
-uNC18Ofilename = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
-NC18Ofilenamekink = 'N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
-uNC18Ofilenamekink = 'N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
-NC18Oplotname = 'N_C18O_constantTex_{0}K_mom0_pbcor.pdf'
+NC18Ofilename = 'column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor.fits'
+uNC18Ofilename = 'column_dens_maps/N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
+NC18Ofilenamekink = 'column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor_kink.fits'
+uNC18Ofilenamekink = 'column_dens_maps/N_C18O_unc_constantTex_{0}K_mom0_pbcor_kink.fits'
+
 # constants
 rms = 0.40993961429269554 * u.K * u.km/u.s
 X_C18O = 5.9e6  # Frerking et al 1982
@@ -73,7 +73,7 @@ mom0 = unumpy.uarray(mom0.value, u_mom0.value)  # they cannot be with units
 mom0kink = unumpy.uarray(mom0kink.value, u_mom0kink.value)
 
 
-# this time is just to do a quick estimate of accretion timescale using t_ff
+# this is just to do a quick estimate of accretion timescale using t_ff
 # M_s = 1.71 * u.Msun
 M_s = ufloat(1.71, 0.19)
 
@@ -87,7 +87,6 @@ NC18Oheader['bunit'] = 'cm-2'
 
 # Here we calculate one single map with T = 15pm5 K
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
-# formatname = str(int(Tex_u))
 
 if os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
     NC18O = fits.getdata('column_dens_maps/'+NC18Ofilename.format(formatname))
@@ -100,13 +99,6 @@ else:
     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(formatname))
 
-# if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(formatname)):
-#     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
-#     newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(formatname))
-# if not os.path.exists('column_dens_maps/'+uNC18Ofilename.format(formatname)):
-#     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
-#     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(formatname))
-
 if os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(formatname)):
     NC18Okink = fits.getdata('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
     uNC18Okink = fits.getdata('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
@@ -117,13 +109,6 @@ else:
     newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18Okink), header=NC18Oheader)
     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
-
-# if not os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(formatname)):
-#     newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18Okink), header=NC18Oheader)
-#     newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(formatname))
-# if not os.path.exists('column_dens_maps/'+uNC18Ofilenamekink.format(formatname)):
-#     newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18Okink), header=NC18Oheader)
-#     newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(formatname))
 
 # Now we take the total mass and estimate accretion
 if os.path.exists(tablefile_unumpy.format(formatname, M_env)):
@@ -155,117 +140,3 @@ else:
 
     results_mass_unumpy.to_csv(tablefile_unumpy.format(formatname, M_env))
 print(results_mass_unumpy[['Sum NC18O (cm-2 Npx)', 'u Sum NC18O (cm-2 Npx)']])
-# change this part of the code to work with the new functions
-# Here we calculate the NC18O map and statistics with Tex with no errors
-
-# if os.path.exists(tablefilekink) and os.path.exists(tablefile):
-#     results_mass = pd.read_csv(tablefile)
-#     results_mass_kink = pd.read_csv(tablefilekink)
-# else:
-#     if not os.path.exists(tablefile):
-#         results_mass = pd.DataFrame(index=Texlist.value)
-#         ## TODO: Move this to another file
-#         for Tex in Texlist:
-#             # Do a N(C18O) map
-#             # the mom0 must have K km/s units but no Quantity
-#             NC18O = N_C18O_21(mom0, B0, Tex)
-#             #We save the column density obtained in a fits file
-#             if not os.path.exists('column_dens_maps/'+NC18Ofilename.format(Tex.value)):
-#                 # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-#                 newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
-#                 newfitshdu.writeto('column_dens_maps/'+NC18Ofilename.format(Tex.value))
-#             if not os.path.exists('column_dens_maps/'+uNC18Ofilename.format(Tex.value)):
-#                 # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-#                 newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
-#                 newfitshdu.writeto('column_dens_maps/'+uNC18Ofilename.format(Tex.value))
-#             # We plot the column density
-#             # fig = plt.figure(figsize=(4,4))
-#             # ax = fig.add_subplot(111, projection=wcsmom)
-#             # im = ax.imshow(NC18O.value)
-#             # fig.colorbar(im,ax=ax,label=r'N(C$^{18}$O) (cm$^{-2}$)')
-#             # ax.set_xlabel('RA (J2000)')
-#             # ax.set_ylabel('DEC (J2000)')
-#             # if not os.path.exists('column_dens_maps/'+NC18Oplotname.format(Tex.value)):
-#             #     fig.savefig('column_dens_maps/'+NC18Oplotname.format(Tex.value))
-#
-#             # Calculate statistics for future reference
-#             # results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
-#             results_mass.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O).n
-#             # results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
-#             results_mass.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(unumpy.nominal_values(NC18O))
-#             # results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
-#             results_mass.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(unumpy.nominal_values(NC18O))
-#             # results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
-#             results_mass.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O).n
-#             # results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
-#             results_mass.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O).n
-#             # Now, we calculate the column density of H2
-#             # results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
-#             Nsum = np.nansum(NC18O)
-#             results_mass.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
-#             results_mass.loc[Tex.value, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
-#             NH2 = NC18O * X_C18O
-#             NH2tot = np.nansum(NH2)
-#             # results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
-#             results_mass.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.n
-#             results_mass.loc[Tex.value, 'u Sum NH2 (cm-2 Npx)'] = NH2tot.s
-#             MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
-#             # MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
-#             # results_mass.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
-#             # results_mass.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
-#             results_mass.loc[Tex.value, 'M (M_sun)'] = MH2.n
-#             results_mass.loc[Tex.value, 'u M (M_sun)'] = MH2.s
-#             results_mass.loc[Tex.value, 'M_acc (M_sun/yr) (M_star=0.39Msun)'] = MH2.n/t_ff[1].value
-#             results_mass.loc[Tex.value, 'u M_acc (M_sun/yr)'] = MH2.s/t_ff[1].value
-#             # print(Tex, MH2, MH2.to(u.Msun))
-#
-#         results_mass.to_csv(tablefile)
-#     if not os.path.exists(tablefilekink):
-#         results_mass_kink = pd.DataFrame(index=Texlist.value)
-#
-#         for Tex in Texlist:
-#             # Do a N(C18O) map
-#             NC18O = N_C18O_21(mom0kink, B0, Tex) # the mom0 must have K km/s units
-#             #We save the column density obtained in a fits file
-#             if not os.path.exists('column_dens_maps/'+NC18Ofilenamekink.format(Tex.value)):
-#                 # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-#                 newfitshdu = fits.PrimaryHDU(data=unumpy.nominal_values(NC18O), header=NC18Oheader)
-#                 newfitshdu.writeto('column_dens_maps/'+NC18Ofilenamekink.format(Tex.value))
-#             if not os.path.exists('column_dens_maps/'+uNC18Ofilenamekink.format(Tex.value)):
-#                 # newfitshdu = fits.PrimaryHDU(data=NC18O.value, header=NC18Oheader)
-#                 newfitshdu = fits.PrimaryHDU(data=unumpy.std_devs(NC18O), header=NC18Oheader)
-#                 newfitshdu.writeto('column_dens_maps/'+uNC18Ofilenamekink.format(Tex.value))
-#             # Calculate statistics for future reference
-#             # results_mass_kink.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O.value)
-#             results_mass_kink.loc[Tex.value, 'Mean NC18O (cm-2)'] = np.nanmean(NC18O).n
-#             # results_mass_kink.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(NC18O.value)
-#             results_mass_kink.loc[Tex.value, 'Standard deviation NC18O (cm-2)'] = np.nanstd(unumpy.nominal_values(NC18O))
-#             # results_mass_kink.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(NC18O.value)
-#             results_mass_kink.loc[Tex.value, 'Median NC18O (cm-2)'] = np.nanmedian(unumpy.nominal_values(NC18O))
-#             # results_mass_kink.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O.value)
-#             results_mass_kink.loc[Tex.value, 'Min NC18O (cm-2)'] = np.nanmin(NC18O).n
-#             # results_mass_kink.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O.value)
-#             results_mass_kink.loc[Tex.value, 'Max NC18O (cm-2)'] = np.nanmax(NC18O).n
-#             # Now, we calculate the column density of H2
-#             # results_mass_kink.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = NC18O.nansum().value
-#             Nsum = np.nansum(NC18O)
-#             results_mass_kink.loc[Tex.value, 'Sum NC18O (cm-2 Npx)'] = Nsum.n
-#             results_mass_kink.loc[Tex.value, 'u Sum NC18O (cm-2 Npx)'] = Nsum.s
-#             NH2 = NC18O * X_C18O
-#             NH2tot = np.nansum(NH2)
-#             # results_mass_kink.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.value
-#             results_mass_kink.loc[Tex.value, 'Sum NH2 (cm-2 Npx)'] = NH2tot.n
-#             results_mass_kink.loc[Tex.value, 'u Sum NH2 (cm-2 Npx)'] = NH2tot.s
-#             MH2 = M_hydrogen2(NH2tot, mu_H2, distance, deltara, deltadec)
-#             # MH2 = NH2tot * (mu_H2 * m_p) * (distance**2) * np.abs(deltara * deltadec)
-#             # results_mass_kink.loc[Tex.value, 'M (kg)'] = (MH2.to(u.kg)).value
-#             # results_mass_kink.loc[Tex.value, 'M (M_sun)'] = (MH2.to(u.Msun)).value
-#             results_mass_kink.loc[Tex.value, 'M (M_sun)'] = MH2.n
-#             results_mass_kink.loc[Tex.value, 'u M (M_sun)'] = MH2.s
-#             results_mass_kink.loc[Tex.value, 'M_acc (M_sun/yr) (M_star=0.39Msun)'] = MH2.n/t_ff[1].value
-#             results_mass_kink.loc[Tex.value, 'u M_acc (M_sun/yr)'] = MH2.s/t_ff[1].value
-#             # print(Tex, MH2, MH2.to(u.Msun))
-#
-#         results_mass_kink.to_csv(tablefilekink)
-#     results_mass = pd.read_csv(tablefile)
-#     results_mass_kink = pd.read_csv(tablefilekink)

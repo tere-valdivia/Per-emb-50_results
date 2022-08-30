@@ -15,7 +15,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 '''
-This code is set to estimate the mass and accretion rate along the streamer.
+This code is set to estimate the mass and infall rate along the streamer.
 
 Important functions
 '''

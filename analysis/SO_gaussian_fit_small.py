@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 
 '''
 Note that we are NOT USING A PB CORRECTED CUBE
+
+This is to fit the whole tail 
 '''
 
 def chi_square(yPred, yData, err):

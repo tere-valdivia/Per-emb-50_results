@@ -1,3 +1,12 @@
+"""
+Author: Teresa Valdivia-Mena
+Last revised August 30, 2022
+
+This code is to extract the position-velocity diagrams for the emission cubes
+
+Current state: SO2 (checked and ok)
+"""
+
 import sys
 sys.path.append('../')
 import regions
@@ -12,7 +21,7 @@ import numpy as np
 from NOEMAsetup import *
 import os
 
-savepv = 0
+savepv = 1
 saveplot = 0
 vmin = 0.
 vmax = 2
@@ -21,58 +30,52 @@ velinit = 0.01
 velend = 14
 radiusplot = 8/3600
 
-folder = '../C18O/CDconfig/JEP/'
-cubename = 'JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
-# folder = '../SO_55_44/CDconfig/'
-# cubename = 'Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor'
-# folder = '../SO2_11_1_11_10_0_10/CDconfig/'
-# cubename = 'Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor'
+# folder = '../'
+# cubename = C18O_2_1_s
+# folder = '../'
+# cubename = SO_55_44_s_Jy
+folder = '../'
+cubename = SO2_11_1_11_10_0_10_s
 cube = SpectralCube.read(folder+cubename+'.fits').with_spectral_unit(u.km /
                         u.s).spectral_slab(velinit*u.km/u.s, velend*u.km/u.s)
 header = cube.header
 ra = ra_Per50
 dec = dec_Per50
 anglepa = 170
-plotname = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly'
-plotnamearcsec = folder+'pvex_'+cubename+'_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly_arcsec'
+plotname = folder+cubename+'_pvex_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly'
+plotnamearcsec = folder+cubename+'_pvex_pvline_center_Per50_1arcsec_'+str(anglepa)+'PA_12arcsec_cutonly_arcsec'
 
 # regionfile = folder + 'pvline.reg'
 
 moment0 = cube.moment(order=0).hdu
 wcsmom0 = WCS(moment0.header)
 
-# reg_sky = regions.read_ds9(regionfile)[0]
-# pvline = reg_sky.to_pixel(wcsmom0)
-# artist = pvline.as_artist()
-
 g_cent = SkyCoord(ra, dec)
 length = 12 * u.arcsec
-# pa_angle_cent = (287.4-90) * u.deg
+
 pa_angle_cent = anglepa * u.deg
 path_cent = PathFromCenter(center=g_cent, length=length, angle=pa_angle_cent, width=1*u.arcsec)
 
 patch_list = path_cent.to_patches(1, wcsmom0, alpha=0.3, color='w')
-# x0, y0 = reg_sky.start.ra.value, reg_sky.start.dec.value
-# x1, y1 = reg_sky.end.ra.value, reg_sky.end.dec.value
-# g = SkyCoord([x0, x1] *u.deg, [y0, y1]*u.deg) #from xx to xx
-# path = Path(g, width=3) #3 pix
 
 slice1 = extract_pv_slice(cube, path_cent)
+
 if savepv:
     slice1.writeto(plotname+'.fits')
-if not os.path.exists(plotnamearcsec+'.fits'):
-    pvdata = np.flip(slice1.data, axis=0) # so that the velocities grow instead of decreasing
-    pvheader = slice1.header
-    pvheader['CRPIX1'] = int(pvheader['NAXIS1']/2)
-    pvheader['CDELT1'] = pvheader['CDELT1']*3600 # we just change the unit to be able to use it with Cote's code
-    pvheader['CUNIT1'] = 'arcsec'
-    if np.sign(pvheader['CDELT2'])<0:
-        velinit = pvheader['CRVAL2'] + pvheader['CDELT2'] * (pvheader['NAXIS2'] - pvheader['CRPIX2']) # this is the velocity in the new first pixel
-        pvheader['CRPIX2'] = 1 # the first pixel is our new reference
-        pvheader['CRVAL2'] = velinit # the first pixel will have the lowest velocity
-        pvheader['CDELT2'] *= -1
-    hdu = fits.PrimaryHDU(data=pvdata, header=pvheader)
-    hdu.writeto(plotnamearcsec+'.fits')
+
+    if not os.path.exists(plotnamearcsec+'.fits'):
+        pvdata = np.flip(slice1.data, axis=0) # so that the velocities grow instead of decreasing
+        pvheader = slice1.header
+        pvheader['CRPIX1'] = int(pvheader['NAXIS1']/2)
+        pvheader['CDELT1'] = pvheader['CDELT1']*3600 # we just change the unit to be able to use it with Cote's code
+        pvheader['CUNIT1'] = 'arcsec'
+        if np.sign(pvheader['CDELT2'])<0:
+            velinit = pvheader['CRVAL2'] + pvheader['CDELT2'] * (pvheader['NAXIS2'] - pvheader['CRPIX2']) # this is the velocity in the new first pixel
+            pvheader['CRPIX2'] = 1 # the first pixel is our new reference
+            pvheader['CRVAL2'] = velinit # the first pixel will have the lowest velocity
+            pvheader['CDELT2'] *= -1
+        hdu = fits.PrimaryHDU(data=pvdata, header=pvheader)
+        hdu.writeto(plotnamearcsec+'.fits')
 
 norm = simple_norm(slice1.data, stretch, min_cut=0, max_cut=0.15)
 
@@ -107,12 +110,5 @@ for p in patch_list:
 ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
 ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
 
-
-# ax = fig.add_subplot(212)
-# im = ax.pcolor(offset, velrange, slice1.data, cmap='inferno', norm=norm)
-# fig.colorbar(im, ax=ax, label=r'Intensity (Jy beam$^{-1}$)')
-# ax.set_aspect(aspect=0.7)
-# ax.set_xlabel('Offset from upper left edge(")')
-# ax.set_ylabel(r'v$_{LSR}$ (km s$^{-1}$)')
 if saveplot:
     fig.savefig(plotname+'.pdf', bbox_inches='tight')

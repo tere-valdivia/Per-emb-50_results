@@ -1,3 +1,21 @@
+"""
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code an interactive interface to look at resulting streamlines, given the
+one image containing the peak values and another image containing the central
+velocities of the molecular line of interest. There are two parameters of the
+model that are fixed: the inclination and position angle of the streamline. The
+recommended values are the inclination and position angle of the protostellar
+disk, if known.
+
+This code makes use of the velocity_tools package by J. E. Pineda.
+In the future, the plan is to include this interactive interface in the
+velocity_tools package.
+
+Current state: H2CO
+"""
+
 import sys
 sys.path.append('../')
 import pyregion
@@ -21,16 +39,15 @@ M_disk = 0.58*u.Msun
 Mstar = (M_s+M_env+M_disk)
 # Mstar = M_s
 # Disk inclination system (i=0 is edge on)
-# inc = -(90-67) * u.deg
-# PA_ang = (170+90)*u.deg
+inc = -(90-67) * u.deg
+PA_ang = (170+90)*u.deg
 # Proposed C18O inclination system (-170 deg)
-# inc = -(90-67) * u.deg
-inc = -(43) * u.deg
-PA_ang = (20+90)*u.deg
-# regionsample = 'data/region_streamer_l.reg'
-regionsample = 'data/region_streamer_C18O_final.reg'
-imagename = '../'+C18O_2_1_TdV+'.fits'
-vcname = '../'+C18O_2_1_fit_Vc+'.fits'
+# inc = -(43) * u.deg
+# PA_ang = (20+90)*u.deg
+regionsample = 'data/region_streamer_l_kink.reg'
+# regionsample = 'data/region_streamer_C18O_final.reg'
+imagename = '../'+H2CO_303_202_TdV+'.fits' #  C18O_2_1_TdV
+vcname = '../'+H2CO_303_202_fit_Vc+'.fits' #  C18O_2_1_fit_Vc
 # Fixed parameter
 v_lsr = 7.48*u.km/u.s  # +- 0.14 km/s according to out C18O data
 
@@ -46,7 +63,6 @@ plt.subplots_adjust(left=0.1, bottom=0.45)
 hdu = fits.open(imagename)
 
 header = hdu[0].header
-freq_H2CO_303_202 = header['RESTFREQ'] * u.Hz
 wcs = WCS(header)
 
 # Plot the image plane in one of the axes
@@ -59,13 +75,13 @@ hdu.close()
 ax.set_xlabel('Right Ascension (J2000)')
 ax.set_ylabel('Declination (J2000)')
 # In case we want to zoom in
-# ra = 52.2813698
-# dec = 31.3648759
-# radiusplot = 12. / 3600.
-# zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
-#                              [dec-radiusplot, dec+radiusplot], 0)
-# ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
-# ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
+ra = 52.2813698
+dec = 31.3648759
+radiusplot = 12. / 3600.
+zoomlims = wcs.all_world2pix([ra-radiusplot, ra+radiusplot],
+                             [dec-radiusplot, dec+radiusplot], 0)
+ax.set_xlim(zoomlims[0][1], zoomlims[0][0])
+ax.set_ylim(zoomlims[1][0], zoomlims[1][1])
 
 regstreamer = pyregion.open('../'+regionsample)
 r2 = regstreamer.as_imagecoord(header)
@@ -148,21 +164,20 @@ def get_streamer(mass, r0, theta0, phi0, omega0, v_r0, inc, PA):
     velocity = v_lsr + vy1
     return fil, d_sky_au, velocity
 
-
-def r0ideal(omega, mass, rcideal):
-    r0i = (SL.G * Mstar * rcideal/(omega**2))**(1/4.)
-    return r0i
-
-
 # Initial parameters
-theta0 = 89.5 * u.deg  # rotate clockwise
-r0 = 3670*u.au
-phi0 = 162.0 * u.deg
-v_r0 = 0.05 * u.km/u.s
-omega0 = 8.72e-13 / u.s
-# r0 = r0ideal(omega0, Mstar, r_c0).to(u.au)
-# r_min = 100*u.au
-# r_min = r_c0
+# H2CO
+theta0 = 61.5 * u.deg  # rotate clockwise
+phi0 = 28 * u.deg  # rotate the plane
+v_r0 = 1.25 * u.km/u.s
+omega0 = 4.53e-13 / u.s
+r0 = 3330 * u.au
+# Test for C18O
+# theta0 = 89.5 * u.deg  # rotate clockwise
+# r0 = 3670*u.au
+# phi0 = 162.0 * u.deg
+# v_r0 = 0.05 * u.km/u.s
+# omega0 = 8.72e-13 / u.s
+
 # Parameter steps
 delta_theta0 = 0.5
 delta_phi0 = 0.5
@@ -203,7 +218,6 @@ def update(val):
     phi = sphi0.val * u.deg
     # r_c = src0.val * u.au
     omega = somega0.val / u.s
-    # rnew = r0ideal(omega, Mstar, r_c).to(u.au)
     rnew = sr0.val * u.au
     v_r = sv0.val * u.km / u.s
     fil, dsky, velo = get_streamer(Mstar, rnew, theta, phi, omega, v_r, inc, PA_ang)

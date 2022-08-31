@@ -47,8 +47,9 @@ SO_55_44_infall = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_inf
 SO_55_44_rot = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_rotation_model'
 SO_55_44_disk = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_wings_model'
 
-H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_Vc'
-H2CO_303_202_fit_sigmav = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_sigma_v'
+H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_Vc'
+H2CO_303_202_fit_sigmav = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_sigma_v'
+H2CO_303_202_fit_Tpeak = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_tmax'
 H2CO_303_202_fitparams = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_fitparams'
 H2CO_303_202_pb_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_Vc'
 region_streamer = 'data/region_streamer.reg'

@@ -5,6 +5,7 @@ Last revised August 31, 2022
 This code is set to estimate the mass and infall rate along the streamer,
  given than the column density maps from mass_estimation_C18O.py already exist
 
+Current state: 0.18 Msun
 '''
 import sys
 sys.path.append('../')
@@ -67,7 +68,7 @@ def M_hydrogen2_unumpy(N, mu, D, deltara, deltadec):
 Inputs
 '''
 Tex_u = ufloat(15, 5)
-Menv = 0.39 #0.18 M_sun
+Menv = 0.18 #0.18 M_sun
 # Tex_u = 15
 formatname = str(int(Tex_u.n)) + 'pm' + str(int(Tex_u.s))
 

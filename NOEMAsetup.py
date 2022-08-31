@@ -29,9 +29,9 @@ H2CO_303_202_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small'
 H2CO_303_202_s_pb = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small'
 #SO_55_44 = 'SO_55_44/CDconfig/Per-emb-50_CD_l009l048_uvsub_SO_multi'
 SO_55_44_s = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube' #the one ending in _small is too heavy for github
+SO_55_44_s_pb = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_small_fitcube'
 SO_55_44_s_Jy = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_Jy' # ok
-#SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
-#C18O_2_1 = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
+
 C18O_2_1_s = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small'
 C18O_2_1_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_reprojectH2COs_mom0'
 SO2_11_1_11_10_0_10_s = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_Jy'# ok

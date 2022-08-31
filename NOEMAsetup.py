@@ -1,3 +1,9 @@
+'''
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+'''
+
 import astropy.units as u
 import numpy as np
 from astropy.io import fits
@@ -27,11 +33,16 @@ SO_55_44_s_Jy = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_Jy' # 
 #SO_56_45 = 'SO_56_45/CDconfig/Per-emb-50_CD_l026l065_uvsub_SO_multi'
 #C18O_2_1 = 'C18O/CDconfig/JEP/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O'
 C18O_2_1_s = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small'
+C18O_2_1_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_reprojectH2COs_mom0'
 SO2_11_1_11_10_0_10_s = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_Jy'# ok
 
 # Data files for analysis
 H2CO_303_202_TdV = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_total_mom0' # from 5.5 to 9.5 km/s, included if needed
 H2CO_303_202_TdV_s = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_stream_mom0' # from 5.5 to 8 km/s
+H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_Vc'
+H2CO_303_202_fit_sigmav = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_sigma_v'
+H2CO_303_202_fit_Tpeak = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_tmax'
+H2CO_303_202_fitparams = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_fitparams_filtered'
 C18O_2_1_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_cut_total_mom0' # from -1 to 14 km/s
 C18O_2_1_fit_Vc = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small_fitcube_1G_Vc' # ok
 # C18O_2_1_fit_Vc_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_1G_Vc'
@@ -47,10 +58,7 @@ SO_55_44_infall = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_inf
 SO_55_44_rot = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_rotation_model'
 SO_55_44_disk = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_wings_model'
 
-H2CO_303_202_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_Vc'
-H2CO_303_202_fit_sigmav = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_sigma_v'
-H2CO_303_202_fit_Tpeak = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_fitcube_1G_tmax'
-H2CO_303_202_fitparams = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_small_1G_fitparams'
+
 H2CO_303_202_pb_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_Vc'
 region_streamer = 'data/region_streamer.reg'
 region_streamer_s = 'data/region_streamer_s.reg'

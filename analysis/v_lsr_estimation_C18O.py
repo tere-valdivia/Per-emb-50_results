@@ -1,3 +1,11 @@
+"""
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code is a quick estimation of the central velocity of the protostar,
+based on our C18O observations
+"""
+
 import sys
 sys.path.append('../')
 
@@ -10,7 +18,7 @@ from spectral_cube import SpectralCube
 import numpy as np
 from ChauvenetRMS import *
 
-filename = '../C18O/CDconfig/Per-emb-50_CD_l025l064_uvsub_C18O_multi_small.fits'
+filename = '../' + C18O_2_1_s + '.fits'
 cube = SpectralCube.read(filename).with_spectral_unit(u.km/u.s)
 wcssky = cube.wcs.celestial
 rms, _ = calculatenoise(cube.hdu.data)
@@ -37,4 +45,4 @@ sp.specfit(fittype='gaussian', guesses=guesses)
 
 sp.plotter()
 sp.specfit.plot_fit()
-plt.savefig('C18O_beam_weighted_spectra_Per50.pdf', bbox_inches='tight')
+# plt.savefig('C18O_beam_weighted_spectra_Per50.pdf', bbox_inches='tight')

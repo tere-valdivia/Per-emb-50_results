@@ -1,3 +1,12 @@
+'''
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code calculates and plots the velocity versus distance profiles to plot
+them against the position-velocity diagram of SO emission, for the case there
+is a symmetrical infall and rotation model.
+'''
+
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -6,6 +15,10 @@ from astropy.wcs import WCS
 from astropy.io import fits
 from astropy.visualization import simple_norm
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+
+import sys
+sys.path.append('../')
+from NOEMAsetup import *
 
 ######################
 # General functions and constants
@@ -47,10 +60,9 @@ def v_proj(x, y, l, M):
 ######################
 # PV image loading and plotting
 ######################
-pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
-# pvfile = '../C18O/CDconfig/JEP/position_velocity/pvex_JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+# pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+pvfile = '../' + SO_55_44_PV + '.fits'
 # savename = 'PV_diagram_SO_170_with_Sakai_toymodel_length1600AU_testvmac_constrc.pdf'
-# savename = 'PV_diagram_C18O_170_with_Sakai_toymodel_length1600AU.pdf'
 
 v_lsr = 7.48*u.km/u.s
 arcsectoau = 293  # * u.au / u.arcsec

@@ -1,3 +1,13 @@
+'''
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code is an interactive interface to calculate and plot the velocity versus
+distance profiles, to further compare them against the position-velocity
+diagram of SO emission, for the case there is an asymmetrical infall and
+rotation model, for the redshifted and blueshifted sides.
+'''
+
 import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
@@ -8,7 +18,11 @@ from astropy.visualization import simple_norm
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from astropy.convolution import convolve, Gaussian1DKernel
 from matplotlib.widgets import Slider, Button
-# TODO: complete convolution of curves
+
+import sys
+sys.path.append('../')
+from NOEMAsetup import *
+
 ### Important functions
 
 def v_inf(radius, l, M, rc):
@@ -36,7 +50,8 @@ rc_0 = 250 * u.au # initial centrifugal radius is
 offset_model = np.linspace(-1500, 1500, 300) * u.au
 
 
-pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+# pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+pvfile = '../' + SO_55_44_PV + '.fits'
 v_lsr = 7.5*u.km/u.s
 arcsectoau = 293  # * u.au / u.arcsec
 rms = 0.01

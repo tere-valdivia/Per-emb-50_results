@@ -1,8 +1,10 @@
-
 '''
-For SO:
-We have fitted 3 gaussian components in the region we call fitcube 2g.
-We have fitted only one gaussian component for the whole map (called small)
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code separates the 1, 2 and 3 Gaussian components found for SO (55-44)
+emission into physically-relevant individual components through a set of
+criteria.
 
 '''
 import os
@@ -15,34 +17,36 @@ import aplpy
 from spectral_cube import SpectralCube
 from astropy.modeling.functional_models import Gaussian1D
 import copy
+import sys
+sys.path.append('../')
+from NOEMAsetup import *
 
 
-cubefile = '../SO_55_44/CDconfigsmall/gaussian_fit_123G_fitcube2g/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
-fitfile1aicres = cubefile + '_1G_fitparams_aicres.fits'
-fitfile2aicres = cubefile + '_2G_fitparams_aicres.fits'
-fitfile3aicres = cubefile + '_3G_fitparams_aicres.fits'
-# cube = SpectralCube.read(cubefile+'_fitcube2g_K.fits')
+cubefile = SO_55_44_s
+fitfile1aicres = '../data/SO_fit_results/' + cubefile[5:] + '_1G_fitparams_aicres.fits'
+fitfile2aicres = '../data/SO_fit_results/' + cubefile[5:] + '_2G_fitparams_aicres.fits'
+fitfile3aicres = '../data/SO_fit_results/' + cubefile[5:] + '_3G_fitparams_aicres.fits'
 
-streamersavename = '../SO_55_44/CDconfigsmall/streamer_component_123G_corrected_0.8kms_samescale.pdf'
-fitstreamfile = cubefile+'_gaussian_streamer_model.fits'
-fitstreamfile_components = cubefile+'_gaussian_streamer_model_components.fits'
+# streamersavename = '../SO_55_44/CDconfigsmall/streamer_component_123G_corrected_0.8kms_samescale.pdf'
+fitstreamfile = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_streamer_model.fits'
+fitstreamfile_components = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_streamer_model_components.fits'
 velmaxstream = 7.2
 maxypixstream = 34
 # cubetotalfile = '../SO_55_44/CDconfigsmall/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
 # fittotalfile = cubetotalfile + '_gaussian_streamer_kink_model.fits'
 
-rotsavename = '../SO_55_44/CDconfigsmall/rotation_component_123G.pdf'
-fitrotfile = cubefile+'_gaussian_rotation_model.fits'
-fitrotfile_components = cubefile+'_gaussian_rotation_model_components.fits'
+# rotsavename = '../SO_55_44/CDconfigsmall/rotation_component_123G.pdf'
+fitrotfile = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_rotation_model.fits'
+fitrotfile_components = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_rotation_model_components.fits'
 
-infsavename = '../SO_55_44/CDconfigsmall/rest_component_123G.pdf'
-fitinffile = cubefile+'_gaussian_infall_model.fits'
-fitinffile_components = cubefile+'_gaussian_infall_model_components.fits'
+# infsavename = '../SO_55_44/CDconfigsmall/rest_component_123G.pdf'
+fitinffile = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_infall_model.fits'
+fitinffile_components = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_infall_model_components.fits'
 velinfmin = 8.1
 
-wingsavename = '../SO_55_44/CDconfigsmall/rest_component_123G.pdf'
-fitwingsfile = cubefile+'_gaussian_wings_model.fits'
-fitwingsfile_components = cubefile+'_gaussian_wings_model_components.fits'
+# wingsavename = '../SO_55_44/CDconfigsmall/rest_component_123G.pdf'
+fitwingsfile = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_disk_model.fits'
+fitwingsfile_components = '../data/SO_fit_results/' + cubefile[5:] + '_gaussian_disk_model_components.fits'
 dispersionminwing = 2.0
 
 # load components

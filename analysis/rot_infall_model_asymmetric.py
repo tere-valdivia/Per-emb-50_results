@@ -1,3 +1,13 @@
+'''
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code calculates and plots the velocity versus distance profiles to plot
+them against the position-velocity diagram of SO emission, for the case there
+is an asymmetrical infall and rotation model, for the redshifted and blueshifted
+sides.
+'''
+
 import numpy as np
 import pandas as pd
 import astropy.units as u
@@ -9,7 +19,11 @@ from astropy.visualization import simple_norm
 from astropy.convolution import convolve, Gaussian1DKernel
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.widgets import Slider, Button
-# TODO: add convolution
+
+import sys
+sys.path.append('../')
+from NOEMAsetup import *
+
 
 def v_inf(radius, l, M, rc):
     # l = L/m
@@ -38,8 +52,11 @@ rc_blue = 100 * u.au # initial centrifugal radius is
 rc_blue2 = 200 * u.au # initial centrifugal radius is
 offset_model = np.linspace(-1500, 1500, 300) * u.au
 
+savemodel = True
+savefig = False
 savename = 'PV_diagram_SO_170_with_Sakai_toymodel_asymetric_vlsr7.5_200.pdf'
-pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+# pvfile = '../SO_55_44/CDconfig/pvex_Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_pvline_center_Per50_1arcsec_170PA_12arcsec.fits'
+pvfile = '../' + SO_55_44_PV + '.fits'
 v_lsr = 7.5*u.km/u.s
 arcsectoau = 293  # * u.au / u.arcsec
 beamsize = 1.2 * u.arcsec
@@ -146,5 +163,6 @@ df['Vel_red_nonconv'] = vel_redshift_nonconv_plot+v_lsr.value
 df['Vel_red'] = vel_redshift_plot+v_lsr.value
 df['Vel_blue_nonconv'] = vel_blueshift_nonconv_plot+v_lsr.value
 df['Vel_blue'] = vel_blueshift_plot+v_lsr.value
-df.to_csv('Sakai_model_results.csv')
-# fig.savefig(savename, bbox_inches='tight', dpi=300)
+
+if savemodel: df.to_csv('Sakai_model_results.csv')
+if savefig: fig.savefig(savename, bbox_inches='tight', dpi=300)

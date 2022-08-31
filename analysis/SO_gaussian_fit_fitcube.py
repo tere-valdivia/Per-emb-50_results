@@ -1,3 +1,14 @@
+'''
+Author: Teresa Valdivia-Mena
+Last revised August 31, 2022
+
+This code is to fit 1, 2, and 3 Gaussian components to a small SO (55-44)
+cube centered around Per-emb-50. Then, the routine determines for each spectrum
+which is the best fit using the Akaike Informtion Criterion.
+
+
+'''
+
 import numpy as np
 from scipy import stats
 from spectral_cube import SpectralCube
@@ -256,8 +267,11 @@ We use the following assumption:
 ########
 # Inputs
 ########
-cubefile = '../SO_55_44/CDconfigsmall/gaussian_fit_123G_fitcube2g/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+# cubefile = '../SO_55_44/CDconfigsmall/gaussian_fit_123G_fitcube2g/Per-emb-50_CD_l009l048_uvsub_SO_multi_small'
+cubefile = '../' + SO_55_44_s
 fitregionfile = 'SO_2G_fitregion.reg'
+fitfolder = 'SO_fit_results/'
+saveplots = False
 velinit = -1.0 * u.km/u.s
 velend = 13.0 * u.km/u.s
 velmin = 5.0
@@ -300,7 +314,7 @@ rms = np.nanstd(np.vstack([cube[:int(np.min(chanlims))], cube[int(np.max(chanlim
 rmsmap = np.ones(np.shape(spc.cube)) * rms
 spc.errorcube = rmsmap
 
-momentsfile = cubefile+'_fitcube2g_moments.fits'
+momentsfile = folder + cubefile + '_fitcube2g_moments.fits'
 cube_mom = cube.spectral_slab(velinit,velend)
 spc_mom = pyspeckit.Cube(cube=cube_mom)
 if os.path.exists(momentsfile):
@@ -318,12 +332,13 @@ spc3 = spc.copy()
 """
 mom01 = np.where(spc.momentcube[0]>rms*snratio, spc.momentcube[0],rms*snratio)
 initguesses = np.array([mom01,spc.momentcube[1],spc.momentcube[2]])
-fitfile1 = cubefile + '_1G_fitparams.fits'
+fitfile1 = fitfolder + cubefile + '_1G_fitparams.fits'
 if not os.path.exists(fitfile1):
     try:
         spc.fiteach(fittype='gaussian',
                     guesses=initguesses,
-                    verbose=1,
+                    verbose_level=0,
+                    verbose=0,
                     signal_cut=signal_cut,
                     blank_value=np.nan,
                     start_from_point=(starting_point))
@@ -349,20 +364,20 @@ The pixels we sample are:
 plot_x = [25,23,29,37,41,30,33,40,34,28,31]
 plot_y = [34,36,25,23,13,12,41,18,24,38,35]
 
-for x, y in zip(plot_x,plot_y):
-    sp = spc.get_spectrum(x,y)
-    sp.plotter()
-    try:
-        sp.specfit.plot_fit()
-    except ValueError:
-        print("{0}, {1} has no fit for 2G".format(x, y))
-    sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.pdf')
-    plt.close('all')
+if saveplots:
+    for x, y in zip(plot_x,plot_y):
+        sp = spc.get_spectrum(x,y)
+        sp.plotter()
+        try:
+            sp.specfit.plot_fit()
+        except ValueError:
+            print("{0}, {1} has no fit for 2G".format(x, y))
+        sp.plotter.savefig(cubefile+ '_1G_'+str(x)+'_'+str(y)+'.pdf')
+        plt.close('all')
 
 
 """
 2 gaussians
-Working on the initial parameters
 """
 
 mom11 = np.ones(np.shape(spc.momentcube[1])) * 9.2
@@ -373,11 +388,11 @@ mom12 = np.ones(np.shape(spc.momentcube[1])) * 7.5
 mom21 = mom22 = np.ones(np.shape(spc.momentcube[2])) * 0.3
 mom02 = mom01 # then will be divided by 2
 initguesses2 = np.concatenate([[mom01/2, mom11, mom21], [mom02/2, mom12, mom22]])
-if not os.path.exists(cubefile + '_2G_initguesses.fits'):
+if not os.path.exists(fitfolder + cubefile + '_2G_initguesses.fits'):
     initguesses2file = fits.PrimaryHDU(data=initguesses2)
-    initguesses2file.writeto(cubefile + '_2G_initguesses.fits')
+    initguesses2file.writeto(fitfolder + cubefile + '_2G_initguesses.fits')
 
-fitfile2 = cubefile + '_2G_fitparams.fits'
+fitfile2 = fitfolder + cubefile + '_2G_fitparams.fits'
 if os.path.exists(fitfile2):
     spc2.load_model_fit(fitfile2, 3, npeaks=2,fittype='gaussian')
 else:
@@ -387,7 +402,8 @@ else:
                     negamp=False,
                     # parlimited=[(True,False), (False,False), (True,True),(True,False), (False,False), (True,True)],
                     # parlimits=[(rms*snratio,np.inf),(0,np.inf),(min_sigma,2.),(rms*snratio,np.inf),(0,np.inf),(min_sigma,2.)],
-                    verbose=3,
+                    verbose_level=0,
+                    verbose=0,
                     signal_cut=signal_cut,
                     blank_value=np.nan,
                     start_from_point=(starting_point))
@@ -397,21 +413,22 @@ else:
     # throw an error
     spc2.write_fit(fitfile2)
 
-for x, y in zip(plot_x,plot_y):
-    sp2 = spc2.get_spectrum(x,y)
-    sp2.plotter()
-    xarr = sp2.xarr.value
-    params = spc2.parcube[:,y,x]
-    try:
-        sp2.specfit.plot_fit()
-        g1 = Gaussian1D(amplitude=params[0],mean=params[1],stddev=params[2])
-        g2 = Gaussian1D(amplitude=params[3],mean=params[4],stddev=params[5])
-        plt.plot(xarr, g1(xarr), '--g')
-        plt.plot(xarr, g2(xarr), '--b')
-    except ValueError:
-        print("{0}, {1} has no fit for 2G".format(x, y))
-    sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.pdf')
-    plt.close('all')
+if saveplots:
+    for x, y in zip(plot_x,plot_y):
+        sp2 = spc2.get_spectrum(x,y)
+        sp2.plotter()
+        xarr = sp2.xarr.value
+        params = spc2.parcube[:,y,x]
+        try:
+            sp2.specfit.plot_fit()
+            g1 = Gaussian1D(amplitude=params[0],mean=params[1],stddev=params[2])
+            g2 = Gaussian1D(amplitude=params[3],mean=params[4],stddev=params[5])
+            plt.plot(xarr, g1(xarr), '--g')
+            plt.plot(xarr, g2(xarr), '--b')
+        except ValueError:
+            print("{0}, {1} has no fit for 2G".format(x, y))
+        sp2.plotter.savefig(cubefile+ '_2G_'+str(x)+'_'+str(y)+'.pdf')
+        plt.close('all')
 
 """
 3 gaussians (we allow the third gaussian component to be broader, but not
@@ -424,11 +441,11 @@ mom13 = np.ones(np.shape(spc.momentcube[1])) * 6.8
 mom23 = np.ones(np.shape(spc.momentcube[2])) * 2
 
 initguesses3 = np.concatenate([[mom01, mom11, mom21], [mom02, mom12, mom22], [mom03, mom13, mom23]])
-if not os.path.exists(cubefile + '_3G_initguesses.fits'):
+if not os.path.exists(fitfolder + cubefile + '_3G_initguesses.fits'):
     initguesses3file = fits.PrimaryHDU(data=initguesses3)
-    initguesses3file.writeto(cubefile + '_3G_initguesses.fits')
+    initguesses3file.writeto(fitfolder + cubefile + '_3G_initguesses.fits')
 
-fitfile3 = cubefile + '_3G_fitparams.fits'
+fitfile3 = fitfolder + cubefile + '_3G_fitparams.fits'
 if os.path.exists(fitfile3):
     spc3.load_model_fit(fitfile3, 3, npeaks=3,fittype='gaussian')
 else:
@@ -439,7 +456,8 @@ else:
                     negamp=False,
                     # parlimited=[(True,False), (False,False), (True,True),(True,False), (False,False), (True,True), (True,False), (False,False), (True,True)],
                     # parlimits=parlims,
-                    verbose=3,
+                    verbose_level = 0,
+                    verbose=0,
                     signal_cut=signal_cut,
                     blank_value=np.nan,
                     start_from_point=(starting_point))
@@ -448,23 +466,25 @@ else:
     # as there are some nan parameters, which indicate failed fits, this will
     # throw an error
     spc3.write_fit(fitfile3)
-for x, y in zip(plot_x,plot_y):
-    sp3 = spc3.get_spectrum(x,y)
-    sp3.plotter()
-    xarr = sp3.xarr.value
-    params = spc3.parcube[:,y,x]
-    try:
-        sp3.specfit.plot_fit()
-        g1 = Gaussian1D(amplitude=params[0],mean=params[1],stddev=params[2])
-        g2 = Gaussian1D(amplitude=params[3],mean=params[4],stddev=params[5])
-        g3 = Gaussian1D(amplitude=params[6],mean=params[7],stddev=params[8])
-        plt.plot(xarr, g1(xarr), '--g')
-        plt.plot(xarr, g2(xarr), '--b')
-        plt.plot(xarr, g3(xarr), '--m')
-    except ValueError:
-        print("{0}, {1} has no fit for 3G".format(x, y))
-    sp3.plotter.savefig(cubefile+ '_3G_'+str(x)+'_'+str(y)+'.pdf')
-    plt.close('all')
+
+if saveplots:
+    for x, y in zip(plot_x,plot_y):
+        sp3 = spc3.get_spectrum(x,y)
+        sp3.plotter()
+        xarr = sp3.xarr.value
+        params = spc3.parcube[:,y,x]
+        try:
+            sp3.specfit.plot_fit()
+            g1 = Gaussian1D(amplitude=params[0],mean=params[1],stddev=params[2])
+            g2 = Gaussian1D(amplitude=params[3],mean=params[4],stddev=params[5])
+            g3 = Gaussian1D(amplitude=params[6],mean=params[7],stddev=params[8])
+            plt.plot(xarr, g1(xarr), '--g')
+            plt.plot(xarr, g2(xarr), '--b')
+            plt.plot(xarr, g3(xarr), '--m')
+        except ValueError:
+            print("{0}, {1} has no fit for 3G".format(x, y))
+        sp3.plotter.savefig(cubefile+ '_3G_'+str(x)+'_'+str(y)+'.pdf')
+        plt.close('all')
 
 # Apply the filters to the parameter cubes
 
@@ -474,13 +494,13 @@ spc3 = filter3G(spc3, rms, snratio, velmin=velmin, velmax=velmax)
 
 # save filtered map
 newheadaic = wcscel.to_header()
-fitfile1filtered = cubefile + '_1G_fitparams_filtered.fits'
+fitfile1filtered = fitfolder + cubefile + '_1G_fitparams_filtered.fits'
 if not os.path.exists(fitfile1filtered):
     spc.write_fit(fitfile1filtered)
-fitfile2filtered = cubefile + '_2G_fitparams_filtered.fits'
+fitfile2filtered = fitfolder + cubefile + '_2G_fitparams_filtered.fits'
 if not os.path.exists(fitfile2filtered):
     spc2.write_fit(fitfile2filtered)
-fitfile3filtered = cubefile + '_3G_fitparams_filtered.fits'
+fitfile3filtered = fitfolder + cubefile + '_3G_fitparams_filtered.fits'
 if not os.path.exists(fitfile3filtered):
     spc3.write_fit(fitfile3filtered)
 
@@ -552,32 +572,31 @@ for x in range(n_x):
             flag_prob[y,x] = 1
 
 
-fitfile1aicmap = cubefile + '_1G_fitparams_aicmap.fits'
+fitfile1aicmap = fitfolder + cubefile + '_1G_fitparams_aicmap.fits'
 if not os.path.exists(fitfile1aicmap):
     hduaic = fits.PrimaryHDU(data=aic1map, header=newheadaic)
     hduaic.writeto(fitfile1aicmap)
-fitfile1aicres = cubefile + '_1G_fitparams_aicres.fits'
+fitfile1aicres = fitfolder + cubefile + '_1G_fitparams_aicres.fits'
 if not os.path.exists(fitfile1aicres):
     spc.write_fit(fitfile1aicres)
 
-fitfile2aicmap = cubefile + '_2G_fitparams_aicmap.fits'
+fitfile2aicmap = fitfolder + cubefile + '_2G_fitparams_aicmap.fits'
 if not os.path.exists(fitfile2aicmap):
     hduaic = fits.PrimaryHDU(data=aic2map, header=newheadaic)
     hduaic.writeto(fitfile2aicmap)
-fitfile2aicres = cubefile + '_2G_fitparams_aicres.fits'
+fitfile2aicres = fitfolder + cubefile + '_2G_fitparams_aicres.fits'
 if not os.path.exists(fitfile2aicres):
     spc2.write_fit(fitfile2aicres)
 
-fitfile3aicmap = cubefile + '_3G_fitparams_aicmap.fits'
+fitfile3aicmap = fitfolder + cubefile + '_3G_fitparams_aicmap.fits'
 if not os.path.exists(fitfile3aicmap):
     hduaic = fits.PrimaryHDU(data=aic3map, header=newheadaic)
     hduaic.writeto(fitfile3aicmap)
-fitfile3aicres = cubefile + '_3G_fitparams_aicres.fits'
+fitfile3aicres = fitfolder + cubefile + '_3G_fitparams_aicres.fits'
 if not os.path.exists(fitfile3aicres):
     spc3.write_fit(fitfile3aicres)
 
-
-fitfileflags = cubefile + '_3G_flag.fits'
+fitfileflags = fitfolder + cubefile + '_3G_flag.fits'
 if not os.path.exists(fitfileflags):
     flaghdu = fits.PrimaryHDU(data=flag_prob, header=newheadaic)
     flaghdu.writeto(fitfileflags)

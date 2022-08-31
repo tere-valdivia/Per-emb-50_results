@@ -53,10 +53,10 @@ SO_55_44_PV = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_Jy_pvex_
 SO2_11_1_11_10_0_10_PV = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_Jy_pvex_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly' # ok
 SO2_11_1_11_10_0_10_TdV = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_total_mom0'
 
-SO_55_44_streamer = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_streamer_model'
-SO_55_44_infall = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_infall_model'
-SO_55_44_rot = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_rotation_model'
-SO_55_44_disk = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_gaussian_wings_model'
+SO_55_44_streamer = 'data/SO_fit_results/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_gaussian_streamer_model'
+SO_55_44_infall = 'data/SO_fit_results/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_gaussian_infall_model'
+SO_55_44_rot = 'data/SO_fit_results/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_gaussian_rotation_model'
+SO_55_44_disk = 'data/SO_fit_results/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_gaussian_disk_model'
 
 
 H2CO_303_202_pb_fit_Vc = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_pbcor_small_1G_Vc'

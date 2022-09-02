@@ -33,8 +33,10 @@ SO_55_44_s_pb = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_pbcor_small_fitcube'
 SO_55_44_s_Jy = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_Jy' # ok
 
 C18O_2_1_s = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small'
-C18O_2_1_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_reprojectH2COs_mom0'
+C18O_2_1_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_fitcube'
+C18O_2_1_pb_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_reprojectH2COs_mom0'
 SO2_11_1_11_10_0_10_s = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_Jy'# ok
+SO2_11_1_11_10_0_10_s_pb = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_pbcor_fitcube'
 
 # Data files for analysis
 H2CO_303_202_TdV = 'data/Per-emb-50_CD_l021l060_uvsub_H2CO_multi_total_mom0' # from 5.5 to 9.5 km/s, included if needed
@@ -47,7 +49,7 @@ C18O_2_1_TdV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_cut_total_
 C18O_2_1_fit_Vc = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small_fitcube_1G_Vc' # ok
 # C18O_2_1_fit_Vc_pb = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_pbcor_1G_Vc'
 C18O_2_1_fitparams = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small_fitcube_1G_fitparams_filtered' # ok
-C18O_2_1_PV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small_pvex_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly_arcsec' # ok
+C18O_2_1_PV = 'data/JEP_mask_multi_Per-emb-50_CD_l025l064_uvsub_C18O_small_pvex_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly' # ok
 SO_55_44_TdV_s = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_total_mom0' # from -1 to 14 km/s
 SO_55_44_PV = 'data/Per-emb-50_CD_l009l048_uvsub_SO_multi_small_fitcube_Jy_pvex_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly' # ok
 SO2_11_1_11_10_0_10_PV = 'data/Per-emb-50_CD_l031l070_uvsub_SO2_multi_fitcube_Jy_pvex_pvline_center_Per50_1arcsec_170PA_12arcsec_cutonly' # ok

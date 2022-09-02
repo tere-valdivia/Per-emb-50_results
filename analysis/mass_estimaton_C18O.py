@@ -38,7 +38,7 @@ Inputs
 '''
 # filenames
 # filenameC18O = '../' + C18O_2_1 + '_pbcor_reprojectH2COs_mom0_l'
-filenameC18Okink = '../' + C18O_2_1_pb + '_l_kink'
+filenameC18Okink = '../' + C18O_2_1_pb_TdV + '_l_kink'
 tablefile_unumpy = 'M_H2_Tex_{0}_mom0_pbcor_unc_tmodel_{1}Msun.csv'
 # NC18Ofilename = 'column_dens_maps/N_C18O_constantTex_{0}K_mom0_pbcor.fits'
 # uNC18Ofilename = 'column_dens_maps/N_C18O_unc_constantTex_{0}K_mom0_pbcor.fits'
